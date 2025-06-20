@@ -70,7 +70,7 @@ const PaymentDetailsModal: React.FC<{
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed !m-0 inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -238,7 +238,7 @@ const GatewaySettingsModal: React.FC<{
     setTimeout(() => setShowCopied(null), 2000);
   };
 
-  // Convert gateway names to IDs for display
+  // Convert gateway names to IDs for display and get settings from API
   const gatewaySettingsWithIds = profile.gatewaySettings ? Object.entries(profile.gatewaySettings).map(([gatewayName, settings]: [string, any]) => {
     const gatewayId = convertGatewayNamesToIds([gatewayName])[0];
     const gatewayInfo = getGatewayInfo(gatewayId);
@@ -246,7 +246,7 @@ const GatewaySettingsModal: React.FC<{
       id: gatewayId,
       name: gatewayName,
       info: gatewayInfo,
-      settings
+      settings: settings // Use actual settings from API
     };
   }) : [];
 
@@ -255,7 +255,7 @@ const GatewaySettingsModal: React.FC<{
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed !m-0 inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -303,7 +303,7 @@ const GatewaySettingsModal: React.FC<{
                       <div className="flex items-center space-x-3">
                         <div>
                           <h3 className="font-semibold">{gateway.info?.displayName || `Gateway ${gateway.id}`}</h3>
-                          <p className="text-sm opacity-90">{gateway.info?.name || gateway.name}</p>
+                          <p className="text-sm opacity-90">{gateway.info?.description || gateway.name}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
@@ -322,7 +322,7 @@ const GatewaySettingsModal: React.FC<{
 
                 {/* Gateway Settings */}
                 <div className="p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
                       <div className="flex items-center justify-center mb-2">
                         <Percent className="h-5 w-5 text-blue-600" />
@@ -335,8 +335,16 @@ const GatewaySettingsModal: React.FC<{
                       <div className="flex items-center justify-center mb-2">
                         <Timer className="h-5 w-5 text-orange-600" />
                       </div>
-                      <div className="text-2xl font-bold text-orange-900">{gateway.settings.payoutDelay}</div>
-                      <div className="text-sm text-orange-700">Days Hold</div>
+                      <div className="text-2xl font-bold text-orange-900">T+{gateway.settings.payoutDelay}</div>
+                      <div className="text-sm text-orange-700">Payout</div>
+                    </div>
+
+                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                      <div className="flex items-center justify-center mb-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div className="text-2xl font-bold text-green-900">Active</div>
+                      <div className="text-sm text-green-700">Status</div>
                     </div>
                   </div>
 
@@ -429,7 +437,7 @@ const GatewaySettingsModal: React.FC<{
 };
 
 const Account: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [selectedPeriod, setSelectedPeriod] = useState('30d');
   const [selectedPayment, setSelectedPayment] = useState<ShopPayment | null>(null);
   const [showGatewaySettings, setShowGatewaySettings] = useState(false);
 
@@ -522,14 +530,22 @@ const Account: React.FC = () => {
   ];
 
   // Available payment gateways with their features (using gateway IDs)
-  const availableGateways = Object.values(GATEWAY_INFO).map(gateway => ({
-    id: gateway.id,
-    name: gateway.displayName,
-    status: profile?.paymentGateways.includes(gateway.id) ? 'active' : 'available',
-    features: gateway.features,
-    color: gateway.color,
-    description: gateway.description
-  }));
+  const availableGateways = Object.values(GATEWAY_INFO).map(gateway => {
+    // Get actual settings from profile if available
+    const gatewaySettings = profile?.gatewaySettings?.[gateway.name];
+    
+    return {
+      id: gateway.id,
+      name: gateway.displayName,
+      description: gateway.description,
+      status: profile?.paymentGateways.includes(gateway.id) ? 'active' : 'available',
+      features: gateway.features,
+      color: gateway.color,
+      // Use actual fee and payout from API if available, otherwise fallback to static values
+      fee: gatewaySettings ? `${gatewaySettings.commission}%` : gateway.fee,
+      payout: gatewaySettings ? `T+${gatewaySettings.payoutDelay}` : gateway.payout
+    };
+  });
 
   // Handle loading states
   if (profileLoading) {
@@ -646,6 +662,10 @@ const Account: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <DollarSign className="h-6 w-6 text-white" />
                 </div>
+                <div className="flex items-center space-x-1 text-green-600">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-sm font-medium">+12.5%</span>
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
@@ -663,6 +683,12 @@ const Account: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <CheckCircle2 className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex items-center space-x-1 text-blue-600">
+                  <Target className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {statistics.totalPayments > 0 ? ((statistics.successfulPayments / statistics.totalPayments) * 100).toFixed(1) : 0}%
+                  </span>
                 </div>
               </div>
               <div>
@@ -682,7 +708,10 @@ const Account: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <Activity className="h-6 w-6 text-white" />
                 </div>
-                
+                <div className="flex items-center space-x-1 text-purple-600">
+                  <ArrowUpRight className="h-4 w-4" />
+                  <span className="text-sm font-medium">+8.1%</span>
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Transactions</p>
@@ -701,7 +730,10 @@ const Account: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <Award className="h-6 w-6 text-white" />
                 </div>
-                
+                <div className="flex items-center space-x-1 text-orange-600">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-sm font-medium">Premium</span>
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Average Order</p>
@@ -809,14 +841,14 @@ const Account: React.FC = () => {
                           <span>{format(new Date(payment.createdAt), 'MMM d, HH:mm')}</span>
                           <span>•</span>
                           <span className="text-primary">
-                            {`${gatewayId || payment.gateway}`}
+                            {gatewayInfo ? gatewayInfo.displayName : `Gateway ${gatewayId || payment.gateway}`}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="text-right">
                           <div className="text-sm font-semibold text-gray-900">
-                            {payment.amount.toFixed(2)}
+                            ${payment.amount.toFixed(2)}
                           </div>
                           <div className="text-xs text-gray-500">{payment.currency}</div>
                         </div>
@@ -869,7 +901,7 @@ const Account: React.FC = () => {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
           {availableGateways.map((gateway, index) => {
             const isActive = gateway.status === 'active';
             
@@ -891,32 +923,40 @@ const Account: React.FC = () => {
                   </div>
                 )}
                 
-                <div className="flex items-center space-x-3 mb-3">
+                <div className="mb-3">
+                  <h3 className={`font-semibold text-sm mb-1 ${isActive ? 'text-primary' : 'text-gray-900'}`}>
+                    {gateway.name}
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-2">{gateway.description}</p>
+                </div>
+                
+                <div className="space-y-2 mb-3">
+                  <div className="flex flex-wrap gap-1">
+                    {gateway.features.map((feature) => (
+                      <span
+                        key={feature}
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          isActive 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
                   
-                  <div>
-                    <h3 className={`font-semibold text-sm ${isActive ? 'text-primary' : 'text-gray-900'}`}>
-                      {gateway.name}
-                    </h3>
-                    <p className="text-xs text-gray-500">{gateway.description}</p>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={`${isActive ? 'text-primary' : 'text-gray-600'}`}>
+                      Fee: {gateway.fee}
+                    </span>
+                    <span className={`${isActive ? 'text-primary' : 'text-gray-600'}`}>
+                      Payout: {gateway.payout}
+                    </span>
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-1">
-                  {gateway.features.map((feature) => (
-                    <span
-                      key={feature}
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        isActive 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'bg-gray-200 text-gray-600'
-                      }`}
-                    >
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className={`mt-3 text-xs font-medium ${
+                <div className={`text-xs font-medium ${
                   isActive ? 'text-primary' : 'text-gray-500'
                 }`}>
                   {isActive ? 'Active' : 'Available'}

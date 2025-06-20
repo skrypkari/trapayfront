@@ -170,14 +170,14 @@ const MerchantDetailsModal: React.FC<{
               <div className="p-4 bg-green-50 rounded-xl border border-green-200">
                 <div className="text-sm font-medium text-green-700 mb-1">Total Amount</div>
                 <div className="text-xl font-bold text-green-900">
-                  ${merchant.totalAmountUSDT.toLocaleString()} USDT
+                  {merchant.totalAmountUSDT.toLocaleString()} USDT
                 </div>
               </div>
 
               <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
                 <div className="text-sm font-medium text-blue-700 mb-1">After Commission</div>
                 <div className="text-xl font-bold text-blue-900">
-                  ${merchant.totalAmountAfterCommissionUSDT.toLocaleString()} USDT
+                  {merchant.totalAmountAfterCommissionUSDT.toLocaleString()} USDT
                 </div>
               </div>
 
@@ -210,11 +210,11 @@ const MerchantDetailsModal: React.FC<{
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <div className="text-gray-500">Amount</div>
-                      <div className="font-medium">${gateway.amountUSDT.toFixed(2)} USDT</div>
+                      <div className="font-medium">{gateway.amountUSDT.toFixed(2)} USDT</div>
                     </div>
                     <div>
                       <div className="text-gray-500">After Commission</div>
-                      <div className="font-medium">${gateway.amountAfterCommissionUSDT.toFixed(2)} USDT</div>
+                      <div className="font-medium">{gateway.amountAfterCommissionUSDT.toFixed(2)} USDT</div>
                     </div>
                     <div>
                       <div className="text-gray-500">Commission</div>
@@ -291,7 +291,7 @@ const MerchantDetailsModal: React.FC<{
                   max={merchant.totalAmountAfterCommissionUSDT}
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Maximum: ${merchant.totalAmountAfterCommissionUSDT.toLocaleString()} USDT
+                  Maximum: {merchant.totalAmountAfterCommissionUSDT.toLocaleString()} USDT
                 </p>
               </div>
 
@@ -462,7 +462,7 @@ const PayoutDetailsModal: React.FC<{
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Amount</div>
                 <div className="text-2xl font-semibold text-gray-900">
-                  ${payout.amount.toLocaleString('en-US', {
+                  {payout.amount.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })} USDT
@@ -662,7 +662,7 @@ const AdminPayouts: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Total Payout</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                  ${stats.totalPayout.toLocaleString()} USDT
+                  {stats.totalPayout.toLocaleString()} USDT
                 </p>
                 <p className="text-xs text-gray-400 mt-1">All paid to merchants</p>
               </div>
@@ -684,7 +684,7 @@ const AdminPayouts: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Awaiting Payout</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                  ${stats.awaitingPayout.toLocaleString()} USDT
+                  {stats.awaitingPayout.toLocaleString()} USDT
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Eligible for payout</p>
               </div>
@@ -706,7 +706,7 @@ const AdminPayouts: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">This Month</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                  ${stats.thisMonth.toLocaleString()} USDT
+                  {stats.thisMonth.toLocaleString()} USDT
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Current month payouts</p>
               </div>
@@ -728,7 +728,7 @@ const AdminPayouts: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Available Balance</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                  ${stats.availableBalance.toLocaleString()} USDT
+                  {stats.availableBalance.toLocaleString()} USDT
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Before commission</p>
               </div>
@@ -853,12 +853,12 @@ const AdminPayouts: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-medium text-gray-900">
-                          ${merchant.totalAmountUSDT.toLocaleString()} USDT
+                          {merchant.totalAmountUSDT.toLocaleString()} USDT
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-medium text-green-600">
-                          ${merchant.totalAmountAfterCommissionUSDT.toLocaleString()} USDT
+                          {merchant.totalAmountAfterCommissionUSDT.toLocaleString()} USDT
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -947,7 +947,7 @@ const AdminPayouts: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-medium text-gray-900">
-                          ${payout.amount.toFixed(2)} USDT
+                          {payout.amount.toFixed(2)} USDT
                         </span>
                       </td>
                       <td className="px-6 py-4">

@@ -5,54 +5,50 @@ import { convertGatewayNamesToIds, convertGatewayIdsToNames, getGatewayNameFromI
 
 export interface PaymentLink {
   id: string;
-  gateway: string; // Gateway ID (0001, 0010, etc.)
+  shopId: string;
   amount: number | null;
   currency: string;
-  usage: string; // 'ONCE' | 'REUSABLE'
-  status: string; // 'pending' | 'failed' | 'completed'
-  payment_url: string | null;
-  success_url: string | null;
-  fail_url: string | null;
-  expires_at: string | null;
-  order_id: string;
-  created_at: string;
-  updated_at: string;
-  // Computed fields for UI compatibility
-  type: 'single' | 'multi' | 'subscription' | 'donation';
+  sourceCurrency?: string | null; // Для Plisio
+  gateway: string; // Gateway name from server (plisio, noda, etc.)
+  maxPayments?: number;
+  currentPayments?: number;
+  status: string; // 'ACTIVE' | 'INACTIVE' | 'EXPIRED'
+  expiresAt?: string | null;
+  successUrl?: string | null;
+  failUrl?: string | null;
+  country?: string | null;
+  language?: string;
   linkUrl: string;
-  successUrl: string | null;
-  failUrl: string | null;
-  expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
+  shop?: {
+    name: string;
+    username: string;
+  };
+  payments?: any[];
 }
 
 export interface CreatePaymentLinkData {
   amount?: number;
   currency: string;
-  type: 'single' | 'multi' | 'subscription' | 'donation';
-  gateway: string; // Gateway ID
+  sourceCurrency?: string; // Для Plisio (Gateway 0001)
+  gateway: string; // Gateway ID (0001, 0010, etc.)
+  maxPayments?: number;
   expiresAt?: string;
-  successUrl?: string;
-  failUrl?: string;
-  customFields?: Record<string, any>;
 }
 
 export interface UpdatePaymentLinkData {
   amount?: number;
   currency?: string;
-  type?: 'single' | 'multi' | 'subscription' | 'donation';
+  sourceCurrency?: string;
   gateway?: string; // Gateway ID
+  maxPayments?: number;
   expiresAt?: string;
-  successUrl?: string;
-  failUrl?: string;
-  customFields?: Record<string, any>;
 }
 
 export interface PaymentLinkFilters {
   status?: string;
-  type?: string;
-  gateway?: string; // Gateway ID
+  gateway?: string; // Gateway name for API
   search?: string;
   page?: number;
   limit?: number;
@@ -71,17 +67,25 @@ export const paymentLinkKeys = {
 // Transform server response to UI format
 const transformPaymentLink = (serverLink: any): PaymentLink => {
   return {
-    ...serverLink,
-    // Convert gateway name to ID
-    gateway: convertGatewayNamesToIds([serverLink.gateway])[0],
-    // Map server fields to UI fields
-    type: serverLink.usage === 'ONCE' ? 'single' : 'multi',
-    linkUrl: serverLink.payment_url || '',
-    successUrl: serverLink.success_url,
-    failUrl: serverLink.fail_url,
-    expiresAt: serverLink.expires_at,
-    createdAt: serverLink.created_at,
-    updatedAt: serverLink.updated_at,
+    id: serverLink.id,
+    shopId: serverLink.shopId,
+    amount: serverLink.amount,
+    currency: serverLink.currency,
+    sourceCurrency: serverLink.sourceCurrency,
+    gateway: serverLink.gateway, // Keep gateway name from server
+    maxPayments: serverLink.maxPayments,
+    currentPayments: serverLink.currentPayments,
+    status: serverLink.status,
+    expiresAt: serverLink.expiresAt,
+    successUrl: serverLink.successUrl,
+    failUrl: serverLink.failUrl,
+    country: serverLink.country,
+    language: serverLink.language,
+    linkUrl: serverLink.linkUrl,
+    createdAt: serverLink.createdAt,
+    updatedAt: serverLink.updatedAt,
+    shop: serverLink.shop,
+    payments: serverLink.payments || []
   };
 };
 
@@ -93,11 +97,10 @@ export function usePaymentLinks(filters?: PaymentLinkFilters) {
       const params = new URLSearchParams();
       
       if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
-      if (filters?.type && filters.type !== 'all') params.append('type', filters.type);
       if (filters?.gateway && filters.gateway !== 'all') {
         // Convert gateway ID to name for API request
         const gatewayName = getGatewayNameFromId(filters.gateway);
-        params.append('gateway', gatewayName);
+        params.append('gateway', gatewayName.toLowerCase());
       }
       if (filters?.search) params.append('search', filters.search);
       if (filters?.page) params.append('page', filters.page.toString());
@@ -106,8 +109,8 @@ export function usePaymentLinks(filters?: PaymentLinkFilters) {
       const queryString = params.toString();
       const response = await api.get<{ 
         success: boolean; 
-        payments: any[]; // Server returns 'payments' not 'paymentLinks'
-        pagination: {
+        links: any[]; // Server returns 'links' not 'result'
+        pagination?: {
           page: number;
           limit: number;
           total: number;
@@ -116,7 +119,7 @@ export function usePaymentLinks(filters?: PaymentLinkFilters) {
       }>(`/payment-links${queryString ? `?${queryString}` : ''}`);
       
       // Transform server response to UI format
-      const transformedPayments = (response.payments || []).map(transformPaymentLink);
+      const transformedPayments = (response.links || []).map(transformPaymentLink);
       
       return {
         paymentLinks: transformedPayments,
@@ -144,8 +147,8 @@ export function usePaymentLink(id: string) {
   return useQuery({
     queryKey: paymentLinkKeys.detail(id),
     queryFn: async () => {
-      const response = await api.get<{ success: boolean; data: any }>(`/payment-links/${id}`);
-      return transformPaymentLink(response.data);
+      const response = await api.get<{ success: boolean; result: any }>(`/payment-links/${id}`);
+      return transformPaymentLink(response.result);
     },
     enabled: !!id,
   });
@@ -153,134 +156,40 @@ export function usePaymentLink(id: string) {
 
 export function useCreatePaymentLink() {
   const queryClient = useQueryClient();
-  const { data: profile } = useShopProfile();
   
   return useMutation({
     mutationFn: async (data: CreatePaymentLinkData) => {
-      if (!profile?.publicKey) {
-        throw new Error('Public key not found. Please ensure you are logged in.');
-      }
+      console.log('Creating payment link with data:', data); // Debug log
 
-      // Convert gateway ID to name for API request
-      const gatewayName = getGatewayNameFromId(data.gateway);
-      console.log('Gateway ID:', data.gateway, 'Gateway Name:', gatewayName); // Debug log
-
-      // Generate unique order_id
-      const orderId = `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Prepare base required parameters for all gateways
+      // ✅ FIXED: Send gateway ID directly, not name
       const requestData: any = {
-        public_key: profile.publicKey,
-        gateway: data.gateway, // Use real gateway name for API
-        order_id: orderId,
         amount: data.amount,
         currency: data.currency,
-        usage: data.type === 'single' ? 'ONCE' : 'REUSABLE'
+        gateway: data.gateway, // Send gateway ID directly (0001, 0010, etc.)
+        maxPayments: data.maxPayments
       };
 
-      // Add general optional parameters
+      // Add sourceCurrency for Plisio (Gateway 0001)
+      if (data.sourceCurrency) {
+        requestData.sourceCurrency = data.sourceCurrency;
+      }
+
+      // Add expiresAt if provided
       if (data.expiresAt) {
-        requestData.expires_at = data.expiresAt;
-      }
-      
-      if (data.successUrl) {
-        requestData.success_url = data.successUrl;
-      }
-      
-      if (data.failUrl) {
-        requestData.fail_url = data.failUrl;
+        requestData.expiresAt = data.expiresAt;
       }
 
-      // Add customer fields only if usage = ONCE
-      if (requestData.usage === 'ONCE') {
-        if (data.customFields?.customer_email) {
-          requestData.customer_email = data.customFields.customer_email;
-        }
-        if (data.customFields?.customer_name) {
-          requestData.customer_name = data.customFields.customer_name;
-        }
-      }
+      console.log('Final request data (sending gateway ID):', requestData); // Debug log
 
-      // Add gateway-specific parameters
-      if (gatewayName === 'Plisio') {
-        // ✅ FIXED: For Plisio required parameters
-        if (data.customFields?.source_currency) {
-          requestData.source_currency = data.customFields.source_currency;
-          console.log('Adding source_currency for Plisio:', data.customFields.source_currency); // Debug log
-        } else {
-          throw new Error('Source currency is required for Gateway 0001 (Plisio)');
-        }
-        // Force ONCE for Plisio
-        requestData.usage = 'ONCE';
-      } else if (gatewayName === 'Rapyd') {
-        // For Rapyd required parameters
-        if (data.customFields?.country) {
-          requestData.country = data.customFields.country;
-        } else {
-          throw new Error('Country is required for Gateway 0010 (Rapyd)');
-        }
-        
-        // Optional parameters for Rapyd
-        if (data.customFields?.language) {
-          requestData.language = data.customFields.language;
-        }
-        if (data.customFields?.amount_is_editable !== undefined) {
-          requestData.amount_is_editable = data.customFields.amount_is_editable;
-        }
-        if (data.customFields?.max_payments) {
-          requestData.max_payments = data.customFields.max_payments;
-        }
-        if (data.customFields?.customer) {
-          requestData.customer = data.customFields.customer;
-        }
-      } else if (gatewayName === 'Noda') {
-        // For Noda currency already added in base parameters
-        // Optional parameters for Noda
-        if (data.customFields?.expiryDate) {
-          requestData.expiryDate = data.customFields.expiryDate;
-        }
-      }
-
-      console.log('Final request data:', requestData); // Debug log
-
-      // Execute POST request to create payment
+      // Execute POST request to create payment link
       const response = await api.post<{ 
         success: boolean; 
         message: string;
-        result: {
-          id: string;
-          gateway_payment_id: string;
-          payment_url: string;
-          status: string;
-        }
-      }>('/payments/create', requestData);
+        result: any;
+      }>('/payment-links', requestData);
       
       // Transform response to PaymentLink format for UI
-      const paymentLink: PaymentLink = {
-        id: response.result.id,
-        gateway: data.gateway, // Keep gateway ID for frontend
-        amount: data.amount || null,
-        currency: data.currency,
-        usage: requestData.usage,
-        status: response.result.status.toLowerCase(),
-        payment_url: response.result.payment_url,
-        success_url: data.successUrl || null,
-        fail_url: data.failUrl || null,
-        expires_at: data.expiresAt || null,
-        order_id: orderId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        // UI compatibility fields
-        type: data.type,
-        linkUrl: response.result.payment_url,
-        successUrl: data.successUrl || null,
-        failUrl: data.failUrl || null,
-        expiresAt: data.expiresAt || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      return paymentLink;
+      return transformPaymentLink(response.result);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentLinkKeys.lists() });
@@ -293,14 +202,14 @@ export function useUpdatePaymentLink() {
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdatePaymentLinkData }) => {
-      // Convert gateway ID to name if provided
+      // ✅ FIXED: Send gateway ID directly, not name
       const dataForApi = {
         ...data,
-        gateway: data.gateway ? getGatewayNameFromId(data.gateway) : undefined
+        gateway: data.gateway // Send gateway ID directly if provided
       };
       
-      const response = await api.patch<{ success: boolean; data: any }>(`/payment-links/${id}`, dataForApi);
-      return transformPaymentLink(response.data);
+      const response = await api.patch<{ success: boolean; result: any }>(`/payment-links/${id}`, dataForApi);
+      return transformPaymentLink(response.result);
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: paymentLinkKeys.lists() });
@@ -326,9 +235,9 @@ export function useTogglePaymentLinkStatus() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: 'active' | 'disabled' }) => {
-      const response = await api.patch<{ success: boolean; data: any }>(`/payment-links/${id}/status`, { status });
-      return transformPaymentLink(response.data);
+    mutationFn: async ({ id, status }: { id: string; status: 'ACTIVE' | 'INACTIVE' }) => {
+      const response = await api.patch<{ success: boolean; result: any }>(`/payment-links/${id}/status`, { status });
+      return transformPaymentLink(response.result);
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: paymentLinkKeys.lists() });
@@ -337,13 +246,13 @@ export function useTogglePaymentLinkStatus() {
   });
 }
 
-export function usePublicPaymentLink(linkUrl: string) {
+export function usePublicPaymentLink(id: string) {
   return useQuery({
-    queryKey: ['publicPaymentLink', linkUrl],
+    queryKey: ['publicPaymentLink', id],
     queryFn: async () => {
-      const response = await api.get<{ success: boolean; data: any }>(`/public/payment-links/${linkUrl}`);
-      return transformPaymentLink(response.data);
+      const response = await api.get<{ success: boolean; result: any }>(`/public/payment-links/${id}`);
+      return transformPaymentLink(response.result);
     },
-    enabled: !!linkUrl,
+    enabled: !!id,
   });
 }

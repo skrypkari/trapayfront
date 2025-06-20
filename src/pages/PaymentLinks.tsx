@@ -11,18 +11,9 @@ import {
   Copy,
   Check,
   Plus,
-  Lock,
-  Mail,
   Calendar,
   Link2,
-  RefreshCw,
-  ChevronDown,
-  Share2,
   Trash2,
-  Edit3,
-  BarChart2,
-  Users,
-  Globe,
   MoreHorizontal,
   ExternalLink,
   X
@@ -32,8 +23,7 @@ import { toast } from 'sonner';
 import DatePicker from '../components/DatePicker';
 import CustomSelect from '../components/CustomSelect';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { formatCurrency, formatCurrencyCompact } from '../utils/currency';
-import { getGatewayInfo, getAllGatewayIds } from '../utils/gatewayMapping';
+import { getGatewayInfo, convertGatewayNamesToIds } from '../utils/gatewayMapping';
 import { 
   usePaymentLinks, 
   useCreatePaymentLink, 
@@ -53,9 +43,8 @@ const CreateLinkModal: React.FC<{
   const [formData, setFormData] = useState<CreatePaymentLinkData>({
     amount: undefined,
     currency: 'USD',
-    type: 'single',
     gateway: '',
-    customFields: {}
+    maxPayments: 1
   });
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -63,7 +52,7 @@ const CreateLinkModal: React.FC<{
   const createMutation = useCreatePaymentLink();
   const { data: shopGateways, isLoading: gatewaysLoading } = useShopGateways();
 
-  // Криптовалюты для source_currency в Gateway 0001 (Plisio)
+  // Криптовалюты для sourceCurrency в Gateway 0001 (Plisio)
   const cryptoCurrencyOptions = [
     { value: 'USDT', label: 'USDT' },
     { value: 'TON', label: 'TON' },
@@ -82,41 +71,6 @@ const CreateLinkModal: React.FC<{
     { value: 'RUB', label: 'RUB' }
   ];
 
-  // Страны для Gateway 0010 (Rapyd)
-  const countryOptions = [
-    { value: 'US', label: 'United States' },
-    { value: 'GB', label: 'United Kingdom' },
-    { value: 'DE', label: 'Germany' },
-    { value: 'FR', label: 'France' },
-    { value: 'ES', label: 'Spain' },
-    { value: 'IT', label: 'Italy' },
-    { value: 'CA', label: 'Canada' },
-    { value: 'AU', label: 'Australia' }
-  ];
-
-  // Языки для Gateway 0010 (Rapyd)
-  const languageOptions = [
-    { value: 'EN', label: 'English' },
-    { value: 'ES', label: 'Spanish' },
-    { value: 'FR', label: 'French' },
-    { value: 'DE', label: 'German' },
-    { value: 'IT', label: 'Italian' }
-  ];
-
-  // Динамически создаем опции типов ссылок в зависимости от выбранного гейтвея
-  const getLinkTypeOptions = () => {
-    const baseOptions = [
-      { value: 'single', label: 'Single-use (ONCE)', icon: <Link2 className="h-4 w-4" /> }
-    ];
-
-    // Для Gateway 0010 (Rapyd) и Gateway 1000 (Noda) добавляем multi-use опцию
-    if (formData.gateway === '0010' || formData.gateway === '1000') {
-      baseOptions.push({ value: 'multi', label: 'Multi-use (REUSABLE)', icon: <RefreshCw className="h-4 w-4" /> });
-    }
-
-    return baseOptions;
-  };
-
   // Создаем опции гейтвеев на основе данных шопа
   const gatewayOptions = shopGateways?.map(gatewayId => {
     const gatewayInfo = getGatewayInfo(gatewayId);
@@ -134,13 +88,8 @@ const CreateLinkModal: React.FC<{
         ...prev, 
         gateway: firstGateway,
         currency: 'USD', // Всегда фиат для currency
-        customFields: {
-          ...prev.customFields,
-          // Для Gateway 0001 (Plisio) устанавливаем source_currency по умолчанию
-          ...(firstGateway === '0001' ? { source_currency: 'USDT' } : {}),
-          // Для Gateway 0010 (Rapyd) устанавливаем country по умолчанию
-          ...(firstGateway === '0010' ? { country: 'US' } : {})
-        }
+        // Для Gateway 0001 (Plisio) устанавливаем sourceCurrency по умолчанию
+        ...(firstGateway === '0001' ? { sourceCurrency: 'USDT' } : {})
       }));
     }
   }, [shopGateways, formData.gateway]);
@@ -148,42 +97,21 @@ const CreateLinkModal: React.FC<{
   // Обновляем настройки при смене гейтвея
   useEffect(() => {
     if (formData.gateway === '0001') {
-      // Для Gateway 0001 (Plisio) принудительно устанавливаем single
-      if (formData.type !== 'single') {
-        setFormData(prev => ({ ...prev, type: 'single' }));
-      }
-      // Устанавливаем source_currency если его нет
-      if (!formData.customFields?.source_currency) {
+      // Для Gateway 0001 (Plisio) устанавливаем sourceCurrency если его нет
+      if (!formData.sourceCurrency) {
         setFormData(prev => ({ 
           ...prev, 
-          customFields: { 
-            ...prev.customFields, 
-            source_currency: 'USDT' 
-          } 
+          sourceCurrency: 'USDT'
         }));
       }
-    } else if (formData.gateway === '0010') {
-      // Для Gateway 0010 (Rapyd) убираем source_currency и устанавливаем country
-      const { source_currency, ...otherFields } = formData.customFields || {};
-      setFormData(prev => ({ 
-        ...prev, 
-        customFields: { 
-          ...otherFields,
-          country: otherFields.country || 'US'
-        } 
-      }));
-    } else if (formData.gateway === '1000') {
-      // Для Gateway 1000 (Noda) убираем специфичные поля других гейтвеев
-      const { source_currency, country, language, amount_is_editable, max_payments, customer, ...otherFields } = formData.customFields || {};
-      setFormData(prev => ({ 
-        ...prev, 
-        customFields: otherFields 
-      }));
+    } else {
+      // Для других гейтвеев убираем sourceCurrency
+      if (formData.sourceCurrency) {
+        const { sourceCurrency, ...rest } = formData;
+        setFormData(rest);
+      }
     }
   }, [formData.gateway]);
-
-  // Убираем Customer Email и Customer Name если выбран reusable
-  const showCustomerFields = formData.type !== 'multi';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,9 +130,8 @@ const CreateLinkModal: React.FC<{
       setFormData({
         amount: undefined,
         currency: 'USD',
-        type: 'single',
         gateway: shopGateways?.[0] || '',
-        customFields: {}
+        maxPayments: 1
       });
       setExpiryDate(null);
     } catch (error: any) {
@@ -213,8 +140,6 @@ const CreateLinkModal: React.FC<{
   };
 
   const isGateway0001 = formData.gateway === '0001'; // Plisio
-  const isGateway0010 = formData.gateway === '0010'; // Rapyd
-  const isGateway1000 = formData.gateway === '1000'; // Noda
 
   return (
     <AnimatePresence>
@@ -247,7 +172,7 @@ const CreateLinkModal: React.FC<{
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Обязательные общие параметры */}
+              {/* Основные параметры */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Required Parameters
@@ -274,35 +199,48 @@ const CreateLinkModal: React.FC<{
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Amount
-                  </label>
-                  <div className="relative">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Amount
+                    </label>
                     <input
                       type="number"
                       value={formData.amount || ''}
                       onChange={(e) => setFormData({ ...formData, amount: e.target.value ? parseFloat(e.target.value) : undefined })}
-                      className="w-full pl-4 pr-20 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                       placeholder="0.00"
                       step="0.01"
-                      disabled={formData.type === 'donation'}
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center">
-                      <CustomSelect
-                        value={formData.currency}
-                        onChange={(value) => setFormData({ ...formData, currency: value })}
-                        options={fiatCurrencyOptions}
-                        placeholder="Currency"
-                        className="w-20"
-                      />
-                    </div>
                   </div>
-                  {formData.type === 'donation' && (
-                    <p className="mt-1 text-sm text-gray-500">Amount will be variable for donations</p>
-                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Currency *
+                    </label>
+                    <CustomSelect
+                      value={formData.currency}
+                      onChange={(value) => setFormData({ ...formData, currency: value })}
+                      options={fiatCurrencyOptions}
+                      placeholder="Currency"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Payments
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.maxPayments || ''}
+                    onChange={(e) => setFormData({ ...formData, maxPayments: e.target.value ? parseInt(e.target.value) : 1 })}
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                    placeholder="1"
+                  />
                   <p className="mt-1 text-xs text-gray-500">
-                    Fiat currency for payment amount (USD, EUR, GBP, RUB)
+                    Maximum number of payments allowed (1 = single use)
                   </p>
                 </div>
               </div>
@@ -320,19 +258,16 @@ const CreateLinkModal: React.FC<{
                       Source Currency *
                     </label>
                     <CustomSelect
-                      value={formData.customFields?.source_currency || 'USDT'}
+                      value={formData.sourceCurrency || 'USDT'}
                       onChange={(value) => setFormData({ 
                         ...formData, 
-                        customFields: { 
-                          ...formData.customFields, 
-                          source_currency: value 
-                        } 
+                        sourceCurrency: value 
                       })}
                       options={cryptoCurrencyOptions}
                       placeholder="Select source currency"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      The cryptocurrency that customers will use to pay (different from the base fiat currency)
+                      The cryptocurrency that customers will use to pay
                     </p>
                   </div>
 
@@ -347,7 +282,6 @@ const CreateLinkModal: React.FC<{
                           <p>• <strong>Currency:</strong> Fiat currency for pricing (USD, EUR, GBP, RUB)</p>
                           <p>• <strong>Source Currency:</strong> Cryptocurrency for actual payment (USDT, BTC, etc.)</p>
                           <p>• Customer sees price in fiat but pays with crypto</p>
-                          <p>• Only supports single-use (ONCE) payments</p>
                         </div>
                       </div>
                     </div>
@@ -355,143 +289,11 @@ const CreateLinkModal: React.FC<{
                 </div>
               )}
 
-              {/* Параметры специфичные для Gateway 0010 (Rapyd) */}
-              {isGateway0010 && (
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2 flex items-center space-x-2">
-                    <span>Gateway 0010 Specific Parameters</span>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Required</span>
-                  </h4>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country *
-                    </label>
-                    <CustomSelect
-                      value={formData.customFields?.country || 'US'}
-                      onChange={(value) => setFormData({ 
-                        ...formData, 
-                        customFields: { 
-                          ...formData.customFields, 
-                          country: value 
-                        } 
-                      })}
-                      options={countryOptions}
-                      placeholder="Select country"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Determines available payment methods for customers
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Language
-                    </label>
-                    <CustomSelect
-                      value={formData.customFields?.language || 'EN'}
-                      onChange={(value) => setFormData({ 
-                        ...formData, 
-                        customFields: { 
-                          ...formData.customFields, 
-                          language: value 
-                        } 
-                      })}
-                      options={languageOptions}
-                      placeholder="Select language"
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="amount_is_editable"
-                      checked={formData.customFields?.amount_is_editable || false}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
-                        customFields: { 
-                          ...formData.customFields, 
-                          amount_is_editable: e.target.checked 
-                        } 
-                      })}
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                    />
-                    <label htmlFor="amount_is_editable" className="text-sm text-gray-700">
-                      Allow customers to edit the amount
-                    </label>
-                  </div>
-
-                  {formData.type === 'multi' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Max Payments
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={formData.customFields?.max_payments || ''}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          customFields: { 
-                            ...formData.customFields, 
-                            max_payments: e.target.value ? parseInt(e.target.value) : undefined 
-                          } 
-                        })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                        placeholder="Unlimited"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Maximum number of payments allowed (leave empty for unlimited)
-                      </p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Customer ID
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.customFields?.customer || ''}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
-                        customFields: { 
-                          ...formData.customFields, 
-                          customer: e.target.value || undefined 
-                        } 
-                      })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                      placeholder="cus_..."
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Gateway customer ID (starts with cus_)
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Необязательные общие параметры */}
+              {/* Дополнительные настройки */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Optional Parameters
                 </h4>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Usage
-                  </label>
-                  <CustomSelect
-                    value={formData.type}
-                    onChange={(value) => setFormData({ ...formData, type: value as any })}
-                    options={getLinkTypeOptions()}
-                    placeholder="Select usage type"
-                  />
-                  {isGateway0001 && (
-                    <p className="mt-1 text-xs text-amber-600">
-                      Gateway 0001 only supports single-use links
-                    </p>
-                  )}
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -522,76 +324,6 @@ const CreateLinkModal: React.FC<{
                     </AnimatePresence>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Success URL
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.successUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, successUrl: e.target.value || undefined })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                      placeholder="https://example.com/success"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fail URL
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.failUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, failUrl: e.target.value || undefined })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                      placeholder="https://example.com/fail"
-                    />
-                  </div>
-                </div>
-
-                {showCustomerFields && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Customer Email
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.customFields?.customer_email || ''}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          customFields: { 
-                            ...formData.customFields, 
-                            customer_email: e.target.value || undefined 
-                          } 
-                        })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                        placeholder="customer@example.com"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Customer Name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.customFields?.customer_name || ''}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
-                          customFields: { 
-                            ...formData.customFields, 
-                            customer_name: e.target.value || undefined 
-                          } 
-                        })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                        placeholder="John Doe"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
@@ -625,7 +357,10 @@ const LinkPreviewModal: React.FC<{
   onClose: () => void;
 }> = ({ link, onClose }) => {
   const [showCopied, setShowCopied] = useState<string | null>(null);
-  const gatewayInfo = getGatewayInfo(link.gateway);
+  
+  // Convert gateway name to ID for display
+  const gatewayId = convertGatewayNamesToIds([link.gateway])[0];
+  const gatewayInfo = getGatewayInfo(gatewayId);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -647,7 +382,7 @@ const LinkPreviewModal: React.FC<{
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-xl shadow-xl w-full max-w-2xl"
+        className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden"
       >
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -657,7 +392,7 @@ const LinkPreviewModal: React.FC<{
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Payment Link</h3>
-                <p className="text-sm text-gray-500">{link.order_id}</p>
+                <p className="text-sm text-gray-500">{link.id}</p>
               </div>
             </div>
             <button
@@ -702,42 +437,43 @@ const LinkPreviewModal: React.FC<{
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Amount</div>
                 <div className="text-2xl font-semibold text-gray-900">
-                  {link.amount === null ? 'Variable' : formatCurrency(link.amount, link.currency)}
+                  {link.amount === null ? 'Variable' : link.amount.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="text-sm font-medium text-gray-500 mb-1">Currency</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {link.currency}
                 </div>
               </div>
 
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Gateway</div>
                 <div className="text-sm text-gray-900">
-                  {gatewayInfo ? gatewayInfo.displayName : `Gateway ${link.gateway}`}
+                  {gatewayInfo ? gatewayInfo.displayName : `Gateway ${gatewayId || link.gateway}`}
                 </div>
               </div>
 
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Status</div>
                 <div className="mt-1">
-                  {link.status === 'pending' && (
-                    <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg w-fit">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm font-medium capitalize">Pending</span>
-                    </div>
-                  )}
-                  {link.status === 'failed' && (
-                    <div className="flex items-center space-x-2 text-red-600 bg-red-50 px-3 py-1 rounded-lg w-fit">
-                      <XCircle className="h-4 w-4" />
-                      <span className="text-sm font-medium capitalize">Failed</span>
-                    </div>
-                  )}
-                  {link.status === 'completed' && (
+                  {link.status === 'ACTIVE' && (
                     <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-1 rounded-lg w-fit">
                       <CheckCircle2 className="h-4 w-4" />
-                      <span className="text-sm font-medium capitalize">Completed</span>
+                      <span className="text-sm font-medium">Active</span>
                     </div>
                   )}
-                  {link.status === 'expired' && (
+                  {link.status === 'INACTIVE' && (
+                    <div className="flex items-center space-x-2 text-gray-600 bg-gray-50 px-3 py-1 rounded-lg w-fit">
+                      <XCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Inactive</span>
+                    </div>
+                  )}
+                  {link.status === 'EXPIRED' && (
                     <div className="flex items-center space-x-2 text-orange-600 bg-orange-50 px-3 py-1 rounded-lg w-fit">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="text-sm font-medium capitalize">Expired</span>
+                      <span className="text-sm font-medium">Expired</span>
                     </div>
                   )}
                 </div>
@@ -746,9 +482,18 @@ const LinkPreviewModal: React.FC<{
 
             <div className="space-y-4">
               <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="text-sm font-medium text-gray-500 mb-1">Usage Count</div>
-                <div className="text-lg font-semibold text-gray-900">{link.usage}</div>
+                <div className="text-sm font-medium text-gray-500 mb-1">Usage</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {link.currentPayments || 0} / {link.maxPayments || 'Unlimited'}
+                </div>
               </div>
+
+              {link.sourceCurrency && (
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="text-sm font-medium text-gray-500 mb-1">Source Currency</div>
+                  <div className="text-lg font-semibold text-gray-900">{link.sourceCurrency}</div>
+                </div>
+              )}
 
               {link.expiresAt && (
                 <div className="p-4 bg-gray-50 rounded-xl">
@@ -759,26 +504,20 @@ const LinkPreviewModal: React.FC<{
                 </div>
               )}
 
-              {link.successUrl && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Success URL</div>
-                  <div className="text-sm text-gray-900 break-all">{link.successUrl}</div>
-                </div>
-              )}
-
-              {link.failUrl && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Failure URL</div>
-                  <div className="text-sm text-gray-900 break-all">{link.failUrl}</div>
-                </div>
-              )}
-
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Created At</div>
                 <div className="text-sm text-gray-900">
                   {new Date(link.createdAt).toLocaleDateString()}
                 </div>
               </div>
+
+              {link.shop && (
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="text-sm font-medium text-gray-500 mb-1">Shop</div>
+                  <div className="text-sm text-gray-900">{link.shop.name}</div>
+                  <div className="text-xs text-gray-500">@{link.shop.username}</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -812,10 +551,9 @@ const PaymentLinks: React.FC = () => {
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
-    { value: 'PENDING', label: 'Pending', icon: <Clock className="h-4 w-4 text-yellow-600" /> },
-    { value: 'PAID', label: 'Paid', icon: <CheckCircle2 className="h-4 w-4 text-green-600" /> },
-    { value: 'EXPIRED', label: 'Expired', icon: <AlertTriangle className="h-4 w-4 text-orange-600" /> },
-    { value: 'FAILED', label: 'Failed', icon: <XCircle className="h-4 w-4 text-red-600" /> }
+    { value: 'ACTIVE', label: 'Active', icon: <CheckCircle2 className="h-4 w-4 text-green-600" /> },
+    { value: 'INACTIVE', label: 'Inactive', icon: <XCircle className="h-4 w-4 text-gray-600" /> },
+    { value: 'EXPIRED', label: 'Expired', icon: <AlertTriangle className="h-4 w-4 text-orange-600" /> }
   ];
 
   // Создаем опции фильтра гейтвеев на основе доступных гейтвеев шопа
@@ -834,6 +572,7 @@ const PaymentLinks: React.FC = () => {
     navigator.clipboard.writeText(linkUrl);
     setShowCopied(id);
     setTimeout(() => setShowCopied(null), 2000);
+    toast.success('Link copied to clipboard!');
   };
 
   const handleDeleteLink = async (id: string) => {
@@ -847,13 +586,11 @@ const PaymentLinks: React.FC = () => {
     }
   };
 
-  
-
   const handleToggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'disabled' : 'active';
+    const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
       await toggleStatusMutation.mutateAsync({ id, status: newStatus as any });
-      toast.success(`Payment link ${newStatus === 'active' ? 'activated' : 'disabled'} successfully`);
+      toast.success(`Payment link ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to update payment link status');
     }
@@ -920,70 +657,67 @@ const PaymentLinks: React.FC = () => {
             <LoadingSpinner size="lg" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Order ID</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Type</th>
+                  <th className="text-left p-4 text-sm font-medium text-gray-500">Link ID</th>
                   <th className="text-left p-4 text-sm font-medium text-gray-500">Amount</th>
+                  <th className="text-left p-4 text-sm font-medium text-gray-500">Currency</th>
                   <th className="text-left p-4 text-sm font-medium text-gray-500">Gateway</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Status</th>
                   <th className="text-left p-4 text-sm font-medium text-gray-500">Usage</th>
+                  <th className="text-left p-4 text-sm font-medium text-gray-500">Status</th>
                   <th className="text-left p-4 text-sm font-medium text-gray-500">Created</th>
                   <th className="text-right p-4 text-sm font-medium text-gray-500">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paymentLinksData?.paymentLinks?.map((link) => {
-                  const gatewayInfo = getGatewayInfo(link.gateway);
+                  // Convert gateway name to ID for display
+                  const gatewayId = convertGatewayNamesToIds([link.gateway])[0];
+                  const gatewayInfo = getGatewayInfo(gatewayId);
                   
                   return (
                     <tr key={link.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="p-4">
-                        <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={link.order_id}>
-                          {link.order_id}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-lg ${
-                          link.type === 'subscription' ? 'bg-blue-50 text-blue-600' :
-                          link.type === 'donation' ? 'bg-green-50 text-green-600' :
-                          'bg-gray-50 text-gray-600'
-                        }`}>
-                          {link.type === 'subscription' && <Calendar className="h-4 w-4" />}
-                          {link.type === 'donation' && <Mail className="h-4 w-4" />}
-                          {link.type === 'single' && <Link2 className="h-4 w-4" />}
-                          {link.type === 'multi' && <RefreshCw className="h-4 w-4" />}
-                          <span className="text-sm font-medium capitalize">{link.type}</span>
+                        <div className="text-sm font-medium text-gray-900 font-mono">
+                          {link.id.slice(0, 8)}...
                         </div>
                       </td>
                       <td className="p-4">
                         <span className="text-sm font-medium text-gray-900">
-                          {link.amount === null ? 'Variable' : formatCurrencyCompact(link.amount, link.currency)}
+                          {link.amount === null ? 'Variable' : link.amount.toLocaleString()}
+                        </span>
+                        {link.sourceCurrency && (
+                          <div className="text-xs text-gray-500">via {link.sourceCurrency}</div>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm font-medium text-gray-900">
+                          {link.currency}
                         </span>
                       </td>
                       <td className="p-4">
                         <span className="text-sm text-gray-900">
-                          {gatewayInfo ? gatewayInfo.displayName : `Gateway ${link.gateway}`}
+                          {gatewayInfo ? gatewayInfo.displayName : `Gateway ${gatewayId || link.gateway}`}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm text-gray-600">
+                          {link.currentPayments || 0} / {link.maxPayments || '∞'}
                         </span>
                       </td>
                       <td className="p-4">
                         <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-lg ${
-                          link.status === 'pending' ? 'bg-yellow-50 text-yellow-600' :
-                          link.status === 'failed' ? 'bg-red-50 text-red-600' :
-                          link.status === 'completed' ? 'bg-green-50 text-green-600' :
+                          link.status === 'ACTIVE' ? 'bg-green-50 text-green-600' :
+                          link.status === 'INACTIVE' ? 'bg-gray-50 text-gray-600' :
                           'bg-orange-50 text-orange-600'
                         }`}>
-                          {link.status === 'pending' && <Clock className="h-4 w-4" />}
-                          {link.status === 'failed' && <XCircle className="h-4 w-4" />}
-                          {link.status === 'completed' && <CheckCircle2 className="h-4 w-4" />}
-                          {link.status === 'expired' && <AlertTriangle className="h-4 w-4" />}
-                          <span className="text-sm font-medium capitalize">{link.status}</span>
+                          {link.status === 'ACTIVE' && <CheckCircle2 className="h-4 w-4" />}
+                          {link.status === 'INACTIVE' && <XCircle className="h-4 w-4" />}
+                          {link.status === 'EXPIRED' && <AlertTriangle className="h-4 w-4" />}
+                          <span className="text-sm font-medium">{link.status}</span>
                         </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm text-gray-600">{link.usage}</span>
                       </td>
                       <td className="p-4">
                         <span className="text-sm text-gray-600">
@@ -1013,22 +747,6 @@ const PaymentLinks: React.FC = () => {
                               <MoreHorizontal className="h-4 w-4" />
                             </button>
                             <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                              <button
-                                onClick={() => handleToggleStatus(link.id, link.status)}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                              >
-                                {link.status === 'active' ? (
-                                  <>
-                                    <XCircle className="h-4 w-4" />
-                                    <span>Disable</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    <span>Enable</span>
-                                  </>
-                                )}
-                              </button>
                               <button
                                 onClick={() => handleDeleteLink(link.id)}
                                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"

@@ -97,8 +97,8 @@ const Layout: React.FC = () => {
         initial={false}
       >
         <div className="h-full flex flex-col">
-          <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <div className="mt-8 px-4 hidden lg:block">
+          <div className="flex-1 flex flex-col overflow-y-auto">
+            <div className="mt-8 px-4 hidden lg:block border-b border-gray-800 pb-6">
               <img src="/logo.webp" alt="Logo" className="h-8" />
             </div>
 

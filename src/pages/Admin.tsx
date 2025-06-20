@@ -201,15 +201,12 @@ const Admin: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <DollarSign className="h-6 w-6 text-white" />
                 </div>
-                <div className="flex items-center space-x-1 text-green-600">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm font-medium">+15.3%</span>
-                </div>
+
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${stats.totalRevenue.toLocaleString()}
+                  {stats.totalRevenue.toLocaleString()} USDT
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Platform wide</p>
               </div>
@@ -223,10 +220,7 @@ const Admin: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <Users className="h-6 w-6 text-white" />
                 </div>
-                <div className="flex items-center space-x-1 text-blue-600">
-                  <Target className="h-4 w-4" />
-                  <span className="text-sm font-medium">+8.2%</span>
-                </div>
+
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Users</p>
@@ -245,10 +239,7 @@ const Admin: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <Activity className="h-6 w-6 text-white" />
                 </div>
-                <div className="flex items-center space-x-1 text-purple-600">
-                  <ArrowUpRight className="h-4 w-4" />
-                  <span className="text-sm font-medium">+12.1%</span>
-                </div>
+
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Payments</p>
@@ -267,15 +258,12 @@ const Admin: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
                   <Award className="h-6 w-6 text-white" />
                 </div>
-                <div className="flex items-center space-x-1 text-orange-600">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="text-sm font-medium">Avg</span>
-                </div>
+
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Average Payment</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${stats.averagePayment.toFixed(2)}
+                  {stats.averagePayment.toFixed(2)} USDT
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Per transaction</p>
               </div>

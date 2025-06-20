@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 
-const API_BASE_URL = 'https://amaterasy884.icu/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 export class ApiError extends Error {
   status: number;

@@ -8,6 +8,7 @@ import AdminAuthGuard from '../components/AdminAuthGuard';
 // Pages
 import Login from '../pages/Login';
 import Payment from '../pages/Payment';
+import PublicPaymentLink from '../pages/PublicPaymentLink';
 import Admin from '../pages/Admin';
 import Users from '../pages/Users';
 import Integration from '../pages/Integration';
@@ -124,6 +125,10 @@ const router = createBrowserRouter([
   {
     path: '/payment/:id',
     element: <Payment />,
+  },
+  {
+    path: '/link/:id',
+    element: <PublicPaymentLink />,
   },
   {
     path: '*',

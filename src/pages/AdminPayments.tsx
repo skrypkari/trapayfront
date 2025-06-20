@@ -98,16 +98,14 @@ const PaymentDetailsModal: React.FC<{
       };
     }
 
-    return {
-      type: 'unknown',
-      icon: <Wallet className="h-5 w-5 text-gray-500" />,
-      label: 'Other Payment Method',
-      details: payment.paymentMethod || 'Unknown method',
-      color: 'bg-gray-50 border-gray-200'
-    };
+    return null; // ✅ FIXED: Return null if no payment method data
   };
 
   const paymentMethodInfo = getPaymentMethodInfo();
+
+  // ✅ FIXED: Check if we have any payment method details to show
+  const hasPaymentMethodDetails = payment.paymentMethod || payment.cardLast4 || payment.bankId || 
+                                  payment.remitterIban || payment.remitterName;
 
   return (
     <motion.div
@@ -146,18 +144,20 @@ const PaymentDetailsModal: React.FC<{
         </div>
 
         <div className="p-6 space-y-8">
-          {/* Payment Method Highlight */}
-          <div className={`p-6 rounded-xl border-2 ${paymentMethodInfo.color}`}>
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-white rounded-xl shadow-sm">
-                {paymentMethodInfo.icon}
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900">{paymentMethodInfo.label}</h4>
-                <p className="text-gray-600">{paymentMethodInfo.details}</p>
+          {/* Payment Method Highlight - Only show if we have payment method info */}
+          {paymentMethodInfo && (
+            <div className={`p-6 rounded-xl border-2 ${paymentMethodInfo.color}`}>
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-white rounded-xl shadow-sm">
+                  {paymentMethodInfo.icon}
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">{paymentMethodInfo.label}</h4>
+                  <p className="text-gray-600">{paymentMethodInfo.details}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Basic Payment Information */}
           <div>
@@ -180,20 +180,23 @@ const PaymentDetailsModal: React.FC<{
                 </div>
               </div>
 
+              {/* ✅ FIXED: Show Gateway Order ID instead of Order ID */}
               <div className="p-4 bg-gray-50 rounded-xl">
-                <div className="text-sm font-medium text-gray-500 mb-1">Order ID</div>
+                <div className="text-sm font-medium text-gray-500 mb-1">Gateway Order ID</div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-900 break-all mr-2">{payment.orderId}</div>
-                  <button
-                    onClick={() => handleCopy(payment.orderId, 'order-id')}
-                    className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-                  >
-                    {showCopied === 'order-id' ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </button>
+                  <div className="text-sm text-gray-900 break-all mr-2">{payment.gatewayOrderId || payment.gatewayPaymentId || 'N/A'}</div>
+                  {payment.gatewayOrderId && (
+                    <button
+                      onClick={() => handleCopy(payment.gatewayOrderId!, 'gateway-order-id')}
+                      className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      {showCopied === 'gateway-order-id' ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -202,10 +205,21 @@ const PaymentDetailsModal: React.FC<{
                 <div className="text-sm text-gray-900 capitalize">{payment.gateway}</div>
               </div>
 
+              {/* ✅ FIXED: Separate Amount and Currency */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Amount</div>
                 <div className="text-lg font-semibold text-gray-900">
-                  {formatCurrency(payment.amount, payment.currency)}
+                  {payment.amount.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="text-sm font-medium text-gray-500 mb-1">Currency</div>
+                <div className="text-lg font-semibold text-gray-900">
+                  {payment.currency}
                 </div>
                 {payment.sourceCurrency && (
                   <div className="text-sm text-gray-500">Source: {payment.sourceCurrency}</div>
@@ -365,58 +379,60 @@ const PaymentDetailsModal: React.FC<{
             </div>
           )}
 
-          {/* Payment Method Details */}
-          <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Payment Method Details</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {payment.paymentMethod && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Payment Method</div>
-                  <div className="text-sm text-gray-900 capitalize">{payment.paymentMethod}</div>
-                </div>
-              )}
-
-              {payment.cardLast4 && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Card Last 4 Digits</div>
-                  <div className="text-sm text-gray-900 font-mono">****{payment.cardLast4}</div>
-                </div>
-              )}
-
-              {payment.bankId && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Bank ID</div>
-                  <div className="text-sm text-gray-900">{payment.bankId}</div>
-                </div>
-              )}
-
-              {payment.remitterIban && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Remitter IBAN</div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-900 font-mono break-all mr-2">{payment.remitterIban}</div>
-                    <button
-                      onClick={() => handleCopy(payment.remitterIban!, 'remitter-iban')}
-                      className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-                    >
-                      {showCopied === 'remitter-iban' ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </button>
+          {/* ✅ FIXED: Only show Payment Method Details section if we have data */}
+          {hasPaymentMethodDetails && (
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Payment Method Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {payment.paymentMethod && (
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Payment Method</div>
+                    <div className="text-sm text-gray-900 capitalize">{payment.paymentMethod}</div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {payment.remitterName && (
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-sm font-medium text-gray-500 mb-1">Remitter Name</div>
-                  <div className="text-sm text-gray-900">{payment.remitterName}</div>
-                </div>
-              )}
+                {payment.cardLast4 && (
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Card Last 4 Digits</div>
+                    <div className="text-sm text-gray-900 font-mono">****{payment.cardLast4}</div>
+                  </div>
+                )}
+
+                {payment.bankId && (
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Bank ID</div>
+                    <div className="text-sm text-gray-900">{payment.bankId}</div>
+                  </div>
+                )}
+
+                {payment.remitterIban && (
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Remitter IBAN</div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-900 font-mono break-all mr-2">{payment.remitterIban}</div>
+                      <button
+                        onClick={() => handleCopy(payment.remitterIban!, 'remitter-iban')}
+                        className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                      >
+                        {showCopied === 'remitter-iban' ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {payment.remitterName && (
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-sm font-medium text-gray-500 mb-1">Remitter Name</div>
+                    <div className="text-sm text-gray-900">{payment.remitterName}</div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Gateway Information */}
           {(payment.gatewayPaymentId || payment.externalPaymentUrl) && (
@@ -528,6 +544,8 @@ const AdminPayments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [gatewayFilter, setGatewayFilter] = useState<string>('all');
+  const [currencyFilter, setCurrencyFilter] = useState<string>('all'); // ✅ NEW: Currency filter
+  const [merchantFilter, setMerchantFilter] = useState<string>('all'); // ✅ NEW: Merchant filter
   const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -570,6 +588,48 @@ const AdminPayments: React.FC = () => {
   }, [currentPage, pageSize, statusFilter, gatewayFilter, startDate, endDate, searchTerm]);
 
   const { data: paymentsData, isLoading, error } = usePayments(filters);
+
+  // ✅ NEW: Extract unique currencies and merchants from payments data for filter options
+  const { currencyOptions, merchantOptions } = useMemo(() => {
+    if (!paymentsData?.payments) {
+      return { currencyOptions: [], merchantOptions: [] };
+    }
+
+    // Extract unique currencies
+    const currencies = [...new Set(paymentsData.payments.map(p => p.currency))].sort();
+    const currencyOpts = [
+      { value: 'all', label: 'All Currencies' },
+      ...currencies.map(currency => ({ value: currency, label: currency }))
+    ];
+
+    // Extract unique merchants
+    const merchants = [...new Set(paymentsData.payments.map(p => p.shopName))].sort();
+    const merchantOpts = [
+      { value: 'all', label: 'All Merchants' },
+      ...merchants.map(merchant => ({ value: merchant, label: merchant }))
+    ];
+
+    return { currencyOptions: currencyOpts, merchantOptions: merchantOpts };
+  }, [paymentsData?.payments]);
+
+  // ✅ NEW: Client-side filtering for currency and merchant (since API doesn't support these filters yet)
+  const filteredPayments = useMemo(() => {
+    if (!paymentsData?.payments) return [];
+
+    return paymentsData.payments.filter(payment => {
+      // Currency filter
+      if (currencyFilter !== 'all' && payment.currency !== currencyFilter) {
+        return false;
+      }
+
+      // Merchant filter
+      if (merchantFilter !== 'all' && payment.shopName !== merchantFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [paymentsData?.payments, currencyFilter, merchantFilter]);
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
@@ -672,7 +732,8 @@ const AdminPayments: React.FC = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-4 md:p-6 border-b border-gray-200">
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col gap-4">
+            {/* Search Bar */}
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -685,68 +746,80 @@ const AdminPayments: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-4">
+
+            {/* Filters Row 1 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <CustomSelect
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={statusOptions}
                 placeholder="Filter by status"
-                className="w-[180px]"
+                className="w-full"
               />
               <CustomSelect
                 value={gatewayFilter}
                 onChange={setGatewayFilter}
                 options={gatewayOptions}
                 placeholder="Filter by gateway"
-                className="w-[180px]"
+                className="w-full"
               />
-              <div className="flex gap-4">
-                <div className="relative">
-                  <button
-                    onClick={() => setIsStartDatePickerOpen(true)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-left flex items-center space-x-3 hover:border-primary transition-all duration-200"
-                  >
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className={startDate ? 'text-gray-900' : 'text-gray-500'}>
-                      {startDate ? format(startDate, 'MMM d, yyyy') : 'Start date'}
-                    </span>
-                  </button>
-                  <AnimatePresence>
-                    {isStartDatePickerOpen && (
-                      <DatePicker
-                        value={startDate}
-                        onChange={(date) => {
-                          setStartDate(date);
-                          setIsStartDatePickerOpen(false);
-                        }}
-                        onClose={() => setIsStartDatePickerOpen(false)}
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
-                <div className="relative">
-                  <button
-                    onClick={() => setIsEndDatePickerOpen(true)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-left flex items-center space-x-3 hover:border-primary transition-all duration-200"
-                  >
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className={endDate ? 'text-gray-900' : 'text-gray-500'}>
-                      {endDate ? format(endDate, 'MMM d, yyyy') : 'End date'}
-                    </span>
-                  </button>
-                  <AnimatePresence>
-                    {isEndDatePickerOpen && (
-                      <DatePicker
-                        value={endDate}
-                        onChange={(date) => {
-                          setEndDate(date);
-                          setIsEndDatePickerOpen(false);
-                        }}
-                        onClose={() => setIsEndDatePickerOpen(false)}
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
+              {/* ✅ NEW: Currency Filter */}
+              <CustomSelect
+                value={currencyFilter}
+                onChange={setCurrencyFilter}
+                options={currencyOptions}
+                placeholder="Filter by currency"
+                className="w-full"
+              />
+            </div>
+
+            {/* Date Filters Row 2 */}
+            <div className="flex gap-4">
+              <div className="relative">
+                <button
+                  onClick={() => setIsStartDatePickerOpen(true)}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-left flex items-center space-x-3 hover:border-primary transition-all duration-200"
+                >
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span className={startDate ? 'text-gray-900' : 'text-gray-500'}>
+                    {startDate ? format(startDate, 'MMM d, yyyy') : 'Start date'}
+                  </span>
+                </button>
+                <AnimatePresence>
+                  {isStartDatePickerOpen && (
+                    <DatePicker
+                      value={startDate}
+                      onChange={(date) => {
+                        setStartDate(date);
+                        setIsStartDatePickerOpen(false);
+                      }}
+                      onClose={() => setIsStartDatePickerOpen(false)}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setIsEndDatePickerOpen(true)}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-left flex items-center space-x-3 hover:border-primary transition-all duration-200"
+                >
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span className={endDate ? 'text-gray-900' : 'text-gray-500'}>
+                    {endDate ? format(endDate, 'MMM d, yyyy') : 'End date'}
+                  </span>
+                </button>
+                <AnimatePresence>
+                  {isEndDatePickerOpen && (
+                    <DatePicker
+                      value={endDate}
+                      onChange={(date) => {
+                        setEndDate(date);
+                        setIsEndDatePickerOpen(false);
+                      }}
+                      onClose={() => setIsEndDatePickerOpen(false)}
+                    />
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
@@ -758,7 +831,7 @@ const AdminPayments: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px]">
+            <table className="w-full min-w-[1200px]">
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left px-6 py-4">
@@ -768,7 +841,7 @@ const AdminPayments: React.FC = () => {
                     </button>
                   </th>
                   <th className="text-left px-6 py-4">
-                    <span className="text-sm font-medium text-gray-500">Order ID</span>
+                    <span className="text-sm font-medium text-gray-500">Gateway Order ID</span>
                   </th>
                   <th className="text-left px-6 py-4">
                     <span className="text-sm font-medium text-gray-500">Shop</span>
@@ -783,6 +856,9 @@ const AdminPayments: React.FC = () => {
                     </button>
                   </th>
                   <th className="text-left px-6 py-4">
+                    <span className="text-sm font-medium text-gray-500">Currency</span>
+                  </th>
+                  <th className="text-left px-6 py-4">
                     <span className="text-sm font-medium text-gray-500">Payment Method</span>
                   </th>
                   <th className="text-left px-6 py-4">
@@ -795,7 +871,7 @@ const AdminPayments: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {paymentsData?.payments.map((payment) => {
+                {filteredPayments.map((payment) => {
                   const paymentMethodDisplay = getPaymentMethodDisplay(payment);
                   
                   return (
@@ -806,7 +882,7 @@ const AdminPayments: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-mono text-gray-900">{payment.orderId}</span>
+                        <span className="text-sm font-mono text-gray-900">{payment.gatewayOrderId || 'N/A'}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div>
@@ -818,10 +894,16 @@ const AdminPayments: React.FC = () => {
                         <span className="text-sm text-gray-900 capitalize">{payment.gateway}</span>
                       </td>
                       <td className="px-6 py-4">
+                        <span className="text-sm font-medium text-gray-900">
+                          {payment.amount.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
                         <div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {formatCurrencyCompact(payment.amount, payment.currency)}
-                          </span>
+                          <span className="text-sm font-medium text-gray-900">{payment.currency}</span>
                           {payment.sourceCurrency && (
                             <div className="text-xs text-gray-500">via {payment.sourceCurrency}</div>
                           )}
@@ -879,7 +961,7 @@ const AdminPayments: React.FC = () => {
                       </td>
                     </tr>
                   );
-                })}
+                }) || []}
               </tbody>
             </table>
           </div>
@@ -893,6 +975,10 @@ const AdminPayments: React.FC = () => {
                 Showing {((paymentsData.pagination.page - 1) * paymentsData.pagination.limit) + 1} to{' '}
                 {Math.min(paymentsData.pagination.page * paymentsData.pagination.limit, paymentsData.pagination.total)} of{' '}
                 {paymentsData.pagination.total} results
+                {/* ✅ NEW: Show filtered count if filters are applied */}
+                {(currencyFilter !== 'all' || merchantFilter !== 'all') && (
+                  <span className="text-primary"> (filtered: {filteredPayments.length})</span>
+                )}
               </div>
               <CustomSelect
                 value={pageSize.toString()}

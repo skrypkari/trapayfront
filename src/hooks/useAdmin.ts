@@ -44,6 +44,7 @@ export interface AdminPayment {
   usage: 'ONCE' | 'REUSABLE';
   externalPaymentUrl?: string;
   gatewayPaymentId?: string;
+  gatewayOrderId?: string;
   customerEmail?: string;
   customerName?: string;
   cardLast4?: string;

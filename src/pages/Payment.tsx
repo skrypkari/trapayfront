@@ -38,6 +38,7 @@ interface PaymentData {
   qr_code?: string; // base64 изображение
   qr_url?: string; // кошелек
   created_at: string;
+  gateway_order_id?: string;
   updated_at: string;
   expires_at?: string;
   order_id?: string;
@@ -63,7 +64,7 @@ const Payment: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
+        const response = await fetch(`http://localhost:5000/api/payments/${id}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -114,7 +115,7 @@ const Payment: React.FC = () => {
 
     const pollStatus = async () => {
       try {
-        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
+        const response = await fetch(`http://localhost:5000/api/payments/${id}`);
         const data = await response.json();
 
         if (data.success && data.result) {
@@ -164,15 +165,15 @@ const Payment: React.FC = () => {
 
   // Get display order ID (order_id or fallback to id)
   const getDisplayOrderId = () => {
-    return paymentData?.order_id || paymentData?.id || '';
+    return paymentData?.gateway_order_id	 || paymentData?.id || '';
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-slate-300">Loading payment details...</p>
+          <p className="mt-4 text-gray-600">Loading payment details...</p>
         </div>
       </div>
     );
@@ -180,7 +181,7 @@ const Payment: React.FC = () => {
 
   if (error || !paymentData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -190,11 +191,11 @@ const Payment: React.FC = () => {
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="h-8 w-8 text-red-600" />
             </div>
-            <h1 className="text-xl font-semibold text-slate-900 mb-3">Payment Not Found</h1>
-            <p className="text-slate-600 mb-8">{error || 'The payment you are looking for does not exist or has been removed.'}</p>
+            <h1 className="text-xl font-semibold text-gray-900 mb-3">Payment Not Found</h1>
+            <p className="text-gray-600 mb-8">{error || 'The payment you are looking for does not exist or has been removed.'}</p>
             <button
               onClick={() => navigate('/')}
-              className="w-full bg-gradient-to-r from-primary to-purple-600 text-white py-3 px-6 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+              className="w-full bg-primary text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-dark transition-colors"
             >
               Go Back
             </button>
@@ -205,7 +206,7 @@ const Payment: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-gray-100">
       <div className="max-w-2xl mx-auto p-4 md:p-6">
         <div className="flex items-center justify-center min-h-screen">
           <motion.div
@@ -216,24 +217,25 @@ const Payment: React.FC = () => {
             {/* Payment Card */}
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div className="px-6 py-4 bg-primary text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-500">Your placed order:</div>
-                    <div className="text-lg font-semibold text-slate-900 truncate" title={getDisplayOrderId()}>
+                    <div className="text-lg font-semibold truncate" title={getDisplayOrderId()}>
                       {getDisplayOrderId()}
                     </div>
                     {paymentData.merchant_brand && (
-                      <div className="text-sm text-slate-600 truncate mt-1" title={paymentData.merchant_brand}>
+                      <div className="text-sm opacity-75 truncate mt-1" title={paymentData.merchant_brand}>
                         by {paymentData.merchant_brand}
                       </div>
                     )}
                   </div>
                   <div className="text-right ml-4 flex-shrink-0">
-                    <div className="text-sm text-slate-500">Amount:</div>
-                    <div className="text-lg font-semibold text-slate-900">
+                    <div className="text-lg font-semibold">
                       {formatCurrency(paymentData.amount, paymentData.currency)}
                     </div>
+                    {paymentData.source_currency && (
+                      <div className="text-sm opacity-75">via {paymentData.source_currency}</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -246,15 +248,15 @@ const Payment: React.FC = () => {
                     {paymentData.gateway === 'plisio' && paymentData.qr_code && (
                       <>
                         <div>
-                          <h2 className="text-xl font-semibold text-slate-900 mb-2">Scan to Pay</h2>
-                          <p className="text-slate-600 text-sm">
+                          <h2 className="text-xl font-semibold text-gray-900 mb-2">Scan to Pay</h2>
+                          <p className="text-gray-600 text-sm">
                             Send exactly {paymentData.invoice_total_sum} {paymentData.source_currency}
                           </p>
                         </div>
 
                         {/* QR Code */}
                         <div className="flex justify-center">
-                          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                          <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
                             <img 
                               src={`${paymentData.qr_code}`}
                               alt="Payment QR Code"
@@ -266,17 +268,17 @@ const Payment: React.FC = () => {
                         {/* Wallet Address */}
                         {paymentData.qr_url && (
                           <div className="space-y-3">
-                            <div className="text-sm font-medium text-slate-700">
+                            <div className="text-sm font-medium text-gray-700">
                               Or copy wallet address:
                             </div>
-                            <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                              <Wallet className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                              <code className="flex-1 text-xs font-mono text-slate-900 break-all">
+                            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                              <Wallet className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              <code className="flex-1 text-xs font-mono text-gray-900 break-all">
                                 {paymentData.qr_url}
                               </code>
                               <button
                                 onClick={() => handleCopy(paymentData.qr_url!, 'wallet')}
-                                className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+                                className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                               >
                                 {showCopied === 'wallet' ? (
                                   <Check className="h-4 w-4 text-green-500" />
@@ -291,7 +293,7 @@ const Payment: React.FC = () => {
                         {/* Amount to Send */}
                         {paymentData.invoice_total_sum && paymentData.source_currency && (
                           <div className="space-y-3">
-                            <div className="text-sm font-medium text-slate-700">
+                            <div className="text-sm font-medium text-gray-700">
                               Amount to send:
                             </div>
                             <div className="flex items-center space-x-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
@@ -329,8 +331,8 @@ const Payment: React.FC = () => {
                     {paymentData.gateway !== 'plisio' && (
                       <div className="space-y-6">
                         <div>
-                          <h2 className="text-xl font-semibold text-slate-900 mb-2">Complete Payment</h2>
-                          <p className="text-slate-600 text-sm">
+                          <h2 className="text-xl font-semibold text-gray-900 mb-2">Complete Payment</h2>
+                          <p className="text-gray-600 text-sm">
                             Click the button below to proceed with your payment
                           </p>
                         </div>
@@ -339,7 +341,7 @@ const Payment: React.FC = () => {
                           href={paymentData.payment_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary to-purple-600 text-white py-4 px-6 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+                          className="inline-flex items-center justify-center w-full bg-primary text-white py-4 px-6 rounded-xl font-medium hover:bg-primary-dark transition-colors"
                         >
                           Continue to Payment
                           <ExternalLink className="h-4 w-4 ml-2" />
@@ -350,7 +352,7 @@ const Payment: React.FC = () => {
                     {/* Refresh Button */}
                     <button
                       onClick={() => window.location.reload()}
-                      className="inline-flex items-center text-slate-500 hover:text-slate-700 text-sm"
+                      className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm"
                     >
                       <RefreshCw className="h-4 w-4 mr-1" />
                       Refresh Status
@@ -375,21 +377,21 @@ const Payment: React.FC = () => {
                     </div>
 
                     <div>
-                      <h2 className="text-2xl font-bold text-slate-900 mb-2">Payment initiation completed</h2>
-                      <p className="text-slate-600">Thank you for using TRAPAY Payment services</p>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment initiation completed</h2>
+                      <p className="text-gray-600">Thank you for using TRAPAY Payment services</p>
                     </div>
 
                     {paymentData.success_url ? (
                       <a
                         href={paymentData.success_url}
-                        className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary to-purple-600 text-white py-4 px-6 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+                        className="inline-flex items-center justify-center w-full bg-primary text-white py-4 px-6 rounded-xl font-medium hover:bg-primary-dark transition-colors"
                       >
                         Return to merchant
                       </a>
                     ) : (
                       <button
                         onClick={() => navigate('/')}
-                        className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary to-purple-600 text-white py-4 px-6 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+                        className="inline-flex items-center justify-center w-full bg-primary text-white py-4 px-6 rounded-xl font-medium hover:bg-primary-dark transition-colors"
                       >
                         Return to merchant
                       </button>
@@ -404,22 +406,22 @@ const Payment: React.FC = () => {
                       <XCircle className="h-8 w-8 text-red-600" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-slate-900 mb-2">Payment Failed</h2>
-                      <p className="text-slate-600 text-sm">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Failed</h2>
+                      <p className="text-gray-600 text-sm">
                         Unfortunately, your payment could not be processed. Please try again.
                       </p>
                     </div>
                     <div className="space-y-3">
                       <button
                         onClick={() => window.location.reload()}
-                        className="w-full bg-gradient-to-r from-primary to-purple-600 text-white py-3 px-6 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+                        className="w-full bg-primary text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-dark transition-colors"
                       >
                         Try Again
                       </button>
                       {paymentData.fail_url && (
                         <a
                           href={paymentData.fail_url}
-                          className="block w-full border border-slate-300 text-slate-700 py-3 px-6 rounded-xl font-medium hover:bg-slate-50 transition-colors"
+                          className="block w-full border border-gray-300 text-gray-700 py-3 px-6 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                         >
                           Go Back
                         </a>
@@ -435,15 +437,15 @@ const Payment: React.FC = () => {
                       <AlertTriangle className="h-8 w-8 text-orange-600" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-slate-900 mb-2">Payment Expired</h2>
-                      <p className="text-slate-600 text-sm">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Expired</h2>
+                      <p className="text-gray-600 text-sm">
                         This payment link has expired. Please create a new payment.
                       </p>
                     </div>
                     {paymentData.fail_url && (
                       <a
                         href={paymentData.fail_url}
-                        className="inline-flex items-center justify-center w-full bg-slate-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-slate-700 transition-colors"
+                        className="inline-flex items-center justify-center w-full bg-gray-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-gray-700 transition-colors"
                       >
                         Go Back
                       </a>
@@ -455,7 +457,7 @@ const Payment: React.FC = () => {
 
             {/* Footer */}
             <div className="mt-8 text-center">
-              <div className="flex items-center justify-center space-x-4 text-sm text-slate-400">
+              <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-2">
                   <span>Powered by</span>
                   <div className="flex items-center space-x-1">
@@ -463,9 +465,9 @@ const Payment: React.FC = () => {
                   </div>
                 </div>
                 <span>•</span>
-                <a href="#" className="hover:text-slate-300 transition-colors">About</a>
+                <a href="#" className="hover:text-gray-700 transition-colors">About</a>
                 <span>•</span>
-                <a href="#" className="hover:text-slate-300 transition-colors">Support</a>
+                <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
               </div>
             </div>
           </motion.div>

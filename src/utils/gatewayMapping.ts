@@ -7,6 +7,8 @@ export interface GatewayInfo {
   description: string;
   features: string[];
   color: string;
+  fee: string;
+  payout: string;
 }
 
 // Gateway ID mapping - users only see IDs, not real names
@@ -35,34 +37,42 @@ export const GATEWAY_INFO: Record<string, GatewayInfo> = {
   '0001': {
     id: '0001',
     name: 'Plisio',
-    displayName: 'Gateway 0001',
-    description: 'Cryptocurrency payment processing',
-    features: ['Crypto', 'Instant', 'Low fees'],
-    color: 'bg-blue-500'
+    displayName: 'Cryptocurrency (Global)',
+    description: 'Modern payment infrastructure - ID: 0001',
+    features: ['Crypto'],
+    color: 'bg-orange-500',
+    fee: '10%',
+    payout: 'T+5'
   },
   '0010': {
     id: '0010',
     name: 'Rapyd',
-    displayName: 'Gateway 0010',
-    description: 'Global payment processing',
-    features: ['Cards', 'Global', 'Multi-currency'],
-    color: 'bg-purple-500'
+    displayName: 'Bank Card (Visa, Master, AmEx, Maestro)',
+    description: 'Global payment processing - ID: 0010',
+    features: ['Multi-currency'],
+    color: 'bg-purple-500',
+    fee: '10%',
+    payout: 'T+5'
   },
   '0100': {
     id: '0100',
     name: 'CoinToPay',
-    displayName: 'Gateway 0100',
-    description: 'Digital payment solutions',
-    features: ['Digital', 'Fast', 'Secure'],
-    color: 'bg-green-500'
+    displayName: 'Open Banking (EU) + SEPA',
+    description: 'Digital payment solutions - ID: 0100',
+    features: ['EUR', 'SEPA'],
+    color: 'bg-green-500',
+    fee: '10%',
+    payout: 'T+5'
   },
   '1000': {
     id: '1000',
     name: 'Noda',
-    displayName: 'Gateway 1000',
-    description: 'Modern payment infrastructure',
-    features: ['Modern', 'Reliable', 'Scalable'],
-    color: 'bg-orange-500'
+    displayName: 'Open Banking (EU)',
+    description: 'Modern payment infrastructure - ID: 1000',
+    features: ['EUR', 'SEPA'],
+    color: 'bg-blue-500',
+    fee: '10%',
+    payout: 'T+5'
   }
 };
 
