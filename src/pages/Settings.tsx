@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Shield, Bell, Key, AlertTriangle, Check, X, Upload, GitBranch as BrandTelegram, Copy, RefreshCw, Eye, EyeOff, Wallet } from 'lucide-react';
+import { User, Lock, Shield, Bell, Key, AlertTriangle, Check, X, Upload, GitBranch as BrandTelegram, Copy, RefreshCw, Eye, EyeOff, Wallet, ExternalLink } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useShopProfile, useUpdateShopProfile, useWalletSettings, useUpdateWalletSettings } from '../hooks/useShop';
@@ -225,7 +225,6 @@ const ApiKeysModal: React.FC<{
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('profile');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
   const [showApiKeysModal, setShowApiKeysModal] = useState(false);
 
@@ -235,9 +234,6 @@ const Settings: React.FC = () => {
     newPassword: '',
     confirmNewPassword: ''
   });
-
-  // Delete account state
-  const [deletePasswordConfirmation, setDeletePasswordConfirmation] = useState('');
 
   // Local notification settings state - ✅ UPDATED: Removed refund and api_error
   const [notificationSettings, setNotificationSettings] = useState({
@@ -267,7 +263,6 @@ const Settings: React.FC = () => {
   const updateNotificationsMutation = useUpdateNotifications();
   const updateWalletsMutation = useUpdateWalletSettings();
   const revokeApiKeysMutation = useRevokeApiKeys();
-  const deleteAccountMutation = useDeleteAccount();
 
   // ✅ UPDATED: Update local notification settings when API data loads (removed refund and api_error)
   useEffect(() => {
@@ -415,19 +410,6 @@ const Settings: React.FC = () => {
       setShowRevokeConfirm(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to revoke API keys');
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    try {
-      await deleteAccountMutation.mutateAsync({
-        passwordConfirmation: deletePasswordConfirmation
-      });
-      toast.success('Account deleted successfully');
-      // Redirect to login or home page
-      window.location.href = '/login';
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete account');
     }
   };
 
@@ -595,12 +577,15 @@ const Settings: React.FC = () => {
                   </form>
                 </div>
 
-                {/* ✅ MOVED: API Access section from Advanced to Security */}
+                {/* ✅ UPDATED: Only Revoke API Keys button remains */}
                 <div className="pt-6 border-t border-gray-200">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">API Access</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <Key className="h-5 w-5 text-yellow-500 mr-2" />
+                      API Keys
+                    </h2>
                     <p className="mt-1 text-sm text-gray-500">
-                      Manage your API keys and access tokens.
+                      Manage your API access and security.
                     </p>
                   </div>
 
@@ -619,38 +604,6 @@ const Settings: React.FC = () => {
                     </button>
                   </div>
                 </div>
-
-                {/* ✅ MOVED: Danger Zone section from Advanced to Security */}
-                <div className="pt-6 border-t border-gray-200">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                      <Shield className="h-5 w-5 text-red-500 mr-2" />
-                      Danger Zone
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Irreversible and destructive actions.
-                    </p>
-                  </div>
-
-                  <div className="mt-6">
-                    <div className="p-4 border border-red-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-medium text-red-700">Delete Account</h3>
-                          <p className="mt-1 text-sm text-red-500">
-                            Once you delete your account, there is no going back.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setShowDeleteConfirm(true)}
-                          className="px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
-                        >
-                          Delete Account
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -662,6 +615,58 @@ const Settings: React.FC = () => {
                   <p className="mt-1 text-sm text-gray-500">
                     Choose what notifications you want to receive via Telegram.
                   </p>
+                </div>
+
+                {/* Telegram Bot Setup Instructions */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <BrandTelegram className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-blue-900 mb-3">Setup Telegram Notifications</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-blue-800 mb-2">Step 1: Start the bot</h4>
+                          <a
+                            href="https://t.me/trapay_notifi_bot"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            <BrandTelegram className="h-4 w-4" />
+                            <span>Open TRAPAY Notification Bot</span>
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-medium text-blue-800 mb-2">Step 2: Send your credentials</h4>
+                          <div className="bg-blue-100 rounded-lg p-4">
+                            <p className="text-sm text-blue-700 mb-2">
+                              After clicking "Start" in the bot, send this message:
+                            </p>
+                            <div className="bg-white rounded-lg p-3 border border-blue-200">
+                              <code className="text-sm text-blue-900 break-all">
+                                {profile ? `${profile.username} ${profile.publicKey}` : 'your_username your_api_key'}
+                              </code>
+                            </div>
+                            <p className="text-xs text-blue-600 mt-2">
+                              Replace with your actual username and API key from the Integration page
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-medium text-blue-800 mb-2">Step 3: Enable notifications</h4>
+                          <p className="text-sm text-blue-700">
+                            Once the bot confirms your registration, you can enable the notifications you want to receive below.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {settingsLoading ? (
@@ -795,69 +800,6 @@ const Settings: React.FC = () => {
         isOpen={showApiKeysModal}
         onClose={() => setShowApiKeysModal(false)}
       />
-
-      {/* Delete Account Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowDeleteConfirm(false);
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden"
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="mt-4 text-center">
-                  <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Are you sure you want to delete your account? This action cannot be undone.
-                  </p>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Enter your password to confirm
-                  </label>
-                  <input
-                    type="password"
-                    value={deletePasswordConfirmation}
-                    onChange={(e) => setDeletePasswordConfirmation(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                    placeholder="Enter your password"
-                  />
-                </div>
-              </div>
-              <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800"
-                  disabled={deleteAccountMutation.isPending}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleDeleteAccount}
-                  disabled={deleteAccountMutation.isPending || !deletePasswordConfirmation}
-                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {deleteAccountMutation.isPending && <LoadingSpinner size="sm" />}
-                  <span>{deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Account'}</span>
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Revoke API Keys Confirmation Modal */}
       <AnimatePresence>
