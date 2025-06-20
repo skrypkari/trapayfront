@@ -265,14 +265,16 @@ const Integration: React.FC = () => {
   ];
 
   const codeExamples = {
-    curl: `curl -X POST https://api.trapay.com/v1/payments \\
-  -H "Authorization: Bearer ${profile?.publicKey || 'your_api_key'}" \\
+    curl: `curl -X POST https://api.trapay.com/payments/create \\
   -H "Content-Type: application/json" \\
   -d '{
-    "amount": 1000,
-    "currency": "USD",
-    "product_name": "Premium Subscription",
-    "customer_email": "customer@example.com"
+    "public_key": ${profile?.publicKey || 'your_api_key'},
+    "gateway": "0100",
+    "order_id": "my_order_999",
+    "amount": 25,
+    "currency": "EUR",
+    "customer_email": "customer@example.com",
+    "customer_name": "Alice Brown"
   }'`,
     node: `const trapay = require('trapay');
 const client = new trapay('${profile?.publicKey || 'your_api_key'}');

@@ -141,7 +141,7 @@ const Payment: React.FC = () => {
       }
     };
 
-    const interval = setInterval(pollStatus, 5000); // Poll every 5 seconds
+    const interval = setInterval(pollStatus, 60000); // Poll every 5 seconds
     return () => clearInterval(interval);
   }, [id, paymentData]);
 
