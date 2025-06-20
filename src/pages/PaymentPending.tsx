@@ -1,0 +1,111 @@
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Clock, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const PaymentPending: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  
+  const paymentId = searchParams.get('payment_id');
+  const amount = searchParams.get('amount');
+  const currency = searchParams.get('currency');
+  const merchantName = searchParams.get('merchant');
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-2xl mx-auto p-4 md:p-6">
+        <div className="flex items-center justify-center min-h-screen">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-lg"
+          >
+            {/* Pending Card */}
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              {/* Pending Animation */}
+              <div className="p-8 text-center">
+                <div className="relative mb-6">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", duration: 0.6 }}
+                    className="relative w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto"
+                  >
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Clock className="h-12 w-12 text-white" />
+                    </motion.div>
+                  </motion.div>
+                </div>
+
+                <div className="space-y-4">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                    Payment Processing
+                  </h1>
+                  <p className="text-gray-600">
+                    Your payment is being processed. Please wait while we confirm the transaction.
+                  </p>
+
+                  {/* Payment Details */}
+                  {(paymentId || amount || merchantName) && (
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                      {paymentId && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Payment ID:</span>
+                          <span className="font-mono text-gray-900">{paymentId}</span>
+                        </div>
+                      )}
+                      {amount && currency && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Amount:</span>
+                          <span className="font-semibold text-gray-900">{amount} {currency}</span>
+                        </div>
+                      )}
+                      {merchantName && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Merchant:</span>
+                          <span className="text-gray-900">{merchantName}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Status Info */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="text-left">
+                        <h4 className="text-sm font-medium text-gray-900">Processing Payment</h4>
+                        <p className="mt-1 text-sm text-gray-700">
+                          Your payment is being processed. This page will automatically update when your payment is confirmed.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-8 text-center">
+              <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+                <div className="flex items-center space-x-2">
+                  <span>Powered by</span>
+                  <div className="flex items-center space-x-1">
+                    <img src="/logo.webp" alt="TRAPAY" className="h-5" />
+                  </div>
+                </div>
+                <span>•</span>
+                <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PaymentPending;

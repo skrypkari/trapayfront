@@ -8,6 +8,9 @@ import AdminAuthGuard from '../components/AdminAuthGuard';
 // Pages
 import Login from '../pages/Login';
 import Payment from '../pages/Payment';
+import PaymentSuccess from '../pages/PaymentSuccess';
+import PaymentPending from '../pages/PaymentPending';
+import PaymentFailed from '../pages/PaymentFailed';
 import PublicPaymentLink from '../pages/PublicPaymentLink';
 import Admin from '../pages/Admin';
 import Users from '../pages/Users';
@@ -125,6 +128,18 @@ const router = createBrowserRouter([
   {
     path: '/payment/:id',
     element: <Payment />,
+  },
+  {
+    path: '/payment/success',
+    element: <PaymentSuccess />,
+  },
+  {
+    path: '/payment/pending',
+    element: <PaymentPending />,
+  },
+  {
+    path: '/payment/failed',
+    element: <PaymentFailed />,
   },
   {
     path: '/link/:id',

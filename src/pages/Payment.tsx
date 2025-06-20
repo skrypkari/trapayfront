@@ -64,7 +64,7 @@ const Payment: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/api/payments/${id}`);
+        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -115,7 +115,7 @@ const Payment: React.FC = () => {
 
     const pollStatus = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/payments/${id}`);
+        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
         const data = await response.json();
 
         if (data.success && data.result) {
