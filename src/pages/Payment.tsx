@@ -206,7 +206,7 @@ const Payment: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <span>Powered by</span>
                 <div className="flex items-center space-x-1">
-                  <img src="/logo.webp" alt="TRAPAY" className="h-5" />
+                  <img src="/logo.png" alt="TRAPAY" className="h-5" />
                 </div>
               </div>
               <span>•</span>
@@ -465,7 +465,7 @@ const Payment: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <span>Powered by</span>
                   <div className="flex items-center space-x-1">
-                    <img src="/logo.webp" alt="TRAPAY" className="h-5" />
+                    <img src="/logo.png" alt="TRAPAY" className="h-5" />
                   </div>
                 </div>
                 <span>•</span>
