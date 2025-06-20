@@ -38,7 +38,6 @@ interface PaymentData {
   qr_code?: string; // base64 изображение
   qr_url?: string; // кошелек
   created_at: string;
-  gateway_order_id?: string;
   updated_at: string;
   expires_at?: string;
   order_id?: string;
@@ -64,7 +63,7 @@ const Payment: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
+        const response = await fetch(`http://localhost:5000/api/payments/${id}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -115,7 +114,7 @@ const Payment: React.FC = () => {
 
     const pollStatus = async () => {
       try {
-        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
+        const response = await fetch(`http://localhost:5000/api/payments/${id}`);
         const data = await response.json();
 
         if (data.success && data.result) {
@@ -141,7 +140,7 @@ const Payment: React.FC = () => {
       }
     };
 
-    const interval = setInterval(pollStatus, 60000); // Poll every 5 seconds
+    const interval = setInterval(pollStatus, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
   }, [id, paymentData]);
 
@@ -165,7 +164,7 @@ const Payment: React.FC = () => {
 
   // Get display order ID (order_id or fallback to id)
   const getDisplayOrderId = () => {
-    return paymentData?.gateway_order_id	 || paymentData?.id || '';
+    return paymentData?.order_id || paymentData?.id || '';
   };
 
   if (isLoading) {
@@ -191,8 +190,8 @@ const Payment: React.FC = () => {
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="h-8 w-8 text-red-600" />
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-3">Payment Not Found</h1>
-            <p className="text-gray-600 mb-8">{error || 'The payment you are looking for does not exist or has been removed.'}</p>
+            <h1 className="text-xl font-semibold text-gray-900 mb-3">Payment Not Successful</h1>
+            <p className="text-gray-600 mb-8">Please try again or contact the payment recipient.</p>
             <button
               onClick={() => navigate('/')}
               className="w-full bg-primary text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-dark transition-colors"
@@ -200,6 +199,20 @@ const Payment: React.FC = () => {
               Go Back
             </button>
           </motion.div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center">
+            <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
+              <div className="flex items-center space-x-2">
+                <span>Powered by</span>
+                <div className="flex items-center space-x-1">
+                  <img src="/logo.webp" alt="TRAPAY" className="h-5" />
+                </div>
+              </div>
+              <span>•</span>
+              <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -348,15 +361,6 @@ const Payment: React.FC = () => {
                         </a>
                       </div>
                     )}
-
-                    {/* Refresh Button */}
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-1" />
-                      Refresh Status
-                    </button>
                   </div>
                 )}
 
@@ -406,9 +410,9 @@ const Payment: React.FC = () => {
                       <XCircle className="h-8 w-8 text-red-600" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Failed</h2>
+                      <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Not Successful</h2>
                       <p className="text-gray-600 text-sm">
-                        Unfortunately, your payment could not be processed. Please try again.
+                        Please try again or contact the payment recipient.
                       </p>
                     </div>
                     <div className="space-y-3">
@@ -464,8 +468,6 @@ const Payment: React.FC = () => {
                     <img src="/logo.webp" alt="TRAPAY" className="h-5" />
                   </div>
                 </div>
-                <span>•</span>
-                <a href="#" className="hover:text-gray-700 transition-colors">About</a>
                 <span>•</span>
                 <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
               </div>

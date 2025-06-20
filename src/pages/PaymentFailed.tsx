@@ -107,7 +107,7 @@ const PaymentFailed: React.FC = () => {
                   </div>
                 </div>
                 <span>•</span>
-                <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
+                <a href="https://t.me/trapay_sales" className="hover:text-gray-700 transition-colors">Support</a>
               </div>
             </div>
           </motion.div>

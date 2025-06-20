@@ -149,7 +149,6 @@ const PaymentSuccess: React.FC = () => {
                         <h4 className="text-sm font-medium text-gray-900">Payment Confirmed</h4>
                         <p className="mt-1 text-sm text-gray-700">
                           Your payment has been successfully processed and confirmed. 
-                          You should receive a confirmation email shortly.
                         </p>
                       </div>
                     </div>
@@ -173,9 +172,7 @@ const PaymentSuccess: React.FC = () => {
                   </div>
                 </div>
                 <span>•</span>
-                <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
-                <span>•</span>
-                <a href="#" className="hover:text-gray-700 transition-colors">Help</a>
+                <a href="https://t.me/trapay_sales" className="hover:text-gray-700 transition-colors">Support</a>
               </div>
             </motion.div>
           </motion.div>

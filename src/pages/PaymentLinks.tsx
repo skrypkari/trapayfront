@@ -36,6 +36,165 @@ import {
   type PaymentLinkFilters 
 } from '../hooks/usePaymentLinks';
 
+// Gateway-specific currency options
+const GATEWAY_CURRENCIES = {
+  '1000': [ // Noda
+    { value: 'EUR', label: 'EUR - Euro' },
+    { value: 'GBP', label: 'GBP - British Pound' },
+    { value: 'BGN', label: 'BGN - Bulgarian Lev' },
+    { value: 'BRL', label: 'BRL - Brazilian Real' },
+    { value: 'CAD', label: 'CAD - Canadian Dollar' },
+    { value: 'DKK', label: 'DKK - Danish Krone' },
+    { value: 'HUF', label: 'HUF - Hungarian Forint' },
+    { value: 'NOK', label: 'NOK - Norwegian Krone' },
+    { value: 'RON', label: 'RON - Romanian Leu' },
+    { value: 'SEK', label: 'SEK - Swedish Krona' }
+  ],
+  '0010': [ // Rapyd - все основные кроме рубля
+    { value: 'USD', label: 'USD - US Dollar' },
+    { value: 'EUR', label: 'EUR - Euro' },
+    { value: 'GBP', label: 'GBP - British Pound' },
+    { value: 'CAD', label: 'CAD - Canadian Dollar' },
+    { value: 'AUD', label: 'AUD - Australian Dollar' },
+    { value: 'CHF', label: 'CHF - Swiss Franc' },
+    { value: 'JPY', label: 'JPY - Japanese Yen' },
+    { value: 'CNY', label: 'CNY - Chinese Yuan' },
+    { value: 'SEK', label: 'SEK - Swedish Krona' },
+    { value: 'NOK', label: 'NOK - Norwegian Krone' },
+    { value: 'DKK', label: 'DKK - Danish Krone' },
+    { value: 'PLN', label: 'PLN - Polish Zloty' },
+    { value: 'CZK', label: 'CZK - Czech Koruna' },
+    { value: 'HUF', label: 'HUF - Hungarian Forint' },
+    { value: 'BGN', label: 'BGN - Bulgarian Lev' },
+    { value: 'RON', label: 'RON - Romanian Leu' },
+    { value: 'HRK', label: 'HRK - Croatian Kuna' },
+    { value: 'TRY', label: 'TRY - Turkish Lira' },
+    { value: 'BRL', label: 'BRL - Brazilian Real' },
+    { value: 'MXN', label: 'MXN - Mexican Peso' },
+    { value: 'ARS', label: 'ARS - Argentine Peso' },
+    { value: 'CLP', label: 'CLP - Chilean Peso' },
+    { value: 'COP', label: 'COP - Colombian Peso' },
+    { value: 'PEN', label: 'PEN - Peruvian Sol' },
+    { value: 'UYU', label: 'UYU - Uruguayan Peso' },
+    { value: 'ZAR', label: 'ZAR - South African Rand' },
+    { value: 'EGP', label: 'EGP - Egyptian Pound' },
+    { value: 'MAD', label: 'MAD - Moroccan Dirham' },
+    { value: 'TND', label: 'TND - Tunisian Dinar' },
+    { value: 'KES', label: 'KES - Kenyan Shilling' },
+    { value: 'NGN', label: 'NGN - Nigerian Naira' },
+    { value: 'GHS', label: 'GHS - Ghanaian Cedi' },
+    { value: 'INR', label: 'INR - Indian Rupee' },
+    { value: 'PKR', label: 'PKR - Pakistani Rupee' },
+    { value: 'BDT', label: 'BDT - Bangladeshi Taka' },
+    { value: 'LKR', label: 'LKR - Sri Lankan Rupee' },
+    { value: 'NPR', label: 'NPR - Nepalese Rupee' },
+    { value: 'THB', label: 'THB - Thai Baht' },
+    { value: 'VND', label: 'VND - Vietnamese Dong' },
+    { value: 'IDR', label: 'IDR - Indonesian Rupiah' },
+    { value: 'MYR', label: 'MYR - Malaysian Ringgit' },
+    { value: 'PHP', label: 'PHP - Philippine Peso' },
+    { value: 'SGD', label: 'SGD - Singapore Dollar' },
+    { value: 'HKD', label: 'HKD - Hong Kong Dollar' },
+    { value: 'TWD', label: 'TWD - Taiwan Dollar' },
+    { value: 'KRW', label: 'KRW - South Korean Won' },
+    { value: 'NZD', label: 'NZD - New Zealand Dollar' }
+  ],
+  '0001': [ // Plisio - основные валюты
+    { value: 'USD', label: 'USD - US Dollar' },
+    { value: 'EUR', label: 'EUR - Euro' },
+    { value: 'GBP', label: 'GBP - British Pound' },
+    { value: 'CAD', label: 'CAD - Canadian Dollar' },
+    { value: 'AUD', label: 'AUD - Australian Dollar' },
+    { value: 'CHF', label: 'CHF - Swiss Franc' },
+    { value: 'JPY', label: 'JPY - Japanese Yen' },
+    { value: 'CNY', label: 'CNY - Chinese Yuan' },
+    { value: 'RUB', label: 'RUB - Russian Ruble' },
+    { value: 'SEK', label: 'SEK - Swedish Krona' },
+    { value: 'NOK', label: 'NOK - Norwegian Krone' },
+    { value: 'DKK', label: 'DKK - Danish Krone' },
+    { value: 'PLN', label: 'PLN - Polish Zloty' },
+    { value: 'CZK', label: 'CZK - Czech Koruna' },
+    { value: 'HUF', label: 'HUF - Hungarian Forint' },
+    { value: 'BGN', label: 'BGN - Bulgarian Lev' },
+    { value: 'RON', label: 'RON - Romanian Leu' },
+    { value: 'HRK', label: 'HRK - Croatian Kuna' },
+    { value: 'TRY', label: 'TRY - Turkish Lira' },
+    { value: 'UAH', label: 'UAH - Ukrainian Hryvnia' },
+    { value: 'BRL', label: 'BRL - Brazilian Real' },
+    { value: 'MXN', label: 'MXN - Mexican Peso' },
+    { value: 'ARS', label: 'ARS - Argentine Peso' },
+    { value: 'INR', label: 'INR - Indian Rupee' },
+    { value: 'KRW', label: 'KRW - South Korean Won' },
+    { value: 'SGD', label: 'SGD - Singapore Dollar' },
+    { value: 'HKD', label: 'HKD - Hong Kong Dollar' },
+    { value: 'THB', label: 'THB - Thai Baht' },
+    { value: 'MYR', label: 'MYR - Malaysian Ringgit' },
+    { value: 'PHP', label: 'PHP - Philippine Peso' },
+    { value: 'IDR', label: 'IDR - Indonesian Rupiah' },
+    { value: 'VND', label: 'VND - Vietnamese Dong' },
+    { value: 'ZAR', label: 'ZAR - South African Rand' },
+    { value: 'EGP', label: 'EGP - Egyptian Pound' },
+    { value: 'AED', label: 'AED - UAE Dirham' },
+    { value: 'SAR', label: 'SAR - Saudi Riyal' },
+    { value: 'QAR', label: 'QAR - Qatari Riyal' },
+    { value: 'KWD', label: 'KWD - Kuwaiti Dinar' },
+    { value: 'BHD', label: 'BHD - Bahraini Dinar' },
+    { value: 'OMR', label: 'OMR - Omani Rial' },
+    { value: 'JOD', label: 'JOD - Jordanian Dinar' },
+    { value: 'LBP', label: 'LBP - Lebanese Pound' },
+    { value: 'ILS', label: 'ILS - Israeli Shekel' },
+    { value: 'IRR', label: 'IRR - Iranian Rial' },
+    { value: 'IQD', label: 'IQD - Iraqi Dinar' },
+    { value: 'AFN', label: 'AFN - Afghan Afghani' },
+    { value: 'PKR', label: 'PKR - Pakistani Rupee' },
+    { value: 'BDT', label: 'BDT - Bangladeshi Taka' },
+    { value: 'LKR', label: 'LKR - Sri Lankan Rupee' },
+    { value: 'NPR', label: 'NPR - Nepalese Rupee' },
+    { value: 'BTN', label: 'BTN - Bhutanese Ngultrum' },
+    { value: 'MVR', label: 'MVR - Maldivian Rufiyaa' },
+    { value: 'KZT', label: 'KZT - Kazakhstani Tenge' },
+    { value: 'UZS', label: 'UZS - Uzbekistan Som' },
+    { value: 'KGS', label: 'KGS - Kyrgyzstan Som' },
+    { value: 'TJS', label: 'TJS - Tajikistan Somoni' },
+    { value: 'TMT', label: 'TMT - Turkmenistan Manat' },
+    { value: 'AZN', label: 'AZN - Azerbaijani Manat' },
+    { value: 'GEL', label: 'GEL - Georgian Lari' },
+    { value: 'AMD', label: 'AMD - Armenian Dram' },
+    { value: 'BYN', label: 'BYN - Belarusian Ruble' },
+    { value: 'MDL', label: 'MDL - Moldovan Leu' },
+    { value: 'ALL', label: 'ALL - Albanian Lek' },
+    { value: 'MKD', label: 'MKD - Macedonian Denar' },
+    { value: 'RSD', label: 'RSD - Serbian Dinar' },
+    { value: 'BAM', label: 'BAM - Bosnia-Herzegovina Mark' },
+    { value: 'MNT', label: 'MNT - Mongolian Tugrik' },
+    { value: 'KHR', label: 'KHR - Cambodian Riel' },
+    { value: 'LAK', label: 'LAK - Laotian Kip' },
+    { value: 'MMK', label: 'MMK - Myanmar Kyat' },
+    { value: 'BND', label: 'BND - Brunei Dollar' },
+    { value: 'FJD', label: 'FJD - Fijian Dollar' },
+    { value: 'PGK', label: 'PGK - Papua New Guinean Kina' },
+    { value: 'VUV', label: 'VUV - Vanuatu Vatu' },
+    { value: 'WST', label: 'WST - Samoan Tala' },
+    { value: 'TOP', label: 'TOP - Tongan Paanga' },
+    { value: 'SBD', label: 'SBD - Solomon Islands Dollar' },
+    { value: 'NZD', label: 'NZD - New Zealand Dollar' }
+  ],
+  '0100': [ // CoinToPay - только EUR
+    { value: 'EUR', label: 'EUR - Euro' }
+  ]
+};
+
+// Криптовалюты для sourceCurrency в Gateway 0001 (Plisio)
+const cryptoCurrencyOptions = [
+  { value: 'USDT', label: 'USDT' },
+  { value: 'TON', label: 'TON' },
+  { value: 'BTC', label: 'BTC' },
+  { value: 'ETH', label: 'ETH' },
+  { value: 'LTC', label: 'LTC' },
+  { value: 'BCH', label: 'BCH' },
+  { value: 'DOGE', label: 'DOGE' }
+];
+
 const CreateLinkModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -52,25 +211,6 @@ const CreateLinkModal: React.FC<{
   const createMutation = useCreatePaymentLink();
   const { data: shopGateways, isLoading: gatewaysLoading } = useShopGateways();
 
-  // Криптовалюты для sourceCurrency в Gateway 0001 (Plisio)
-  const cryptoCurrencyOptions = [
-    { value: 'USDT', label: 'USDT' },
-    { value: 'TON', label: 'TON' },
-    { value: 'BTC', label: 'BTC' },
-    { value: 'ETH', label: 'ETH' },
-    { value: 'LTC', label: 'LTC' },
-    { value: 'BCH', label: 'BCH' },
-    { value: 'DOGE', label: 'DOGE' }
-  ];
-
-  // Фиатные валюты для currency (для всех гейтвеев)
-  const fiatCurrencyOptions = [
-    { value: 'USD', label: 'USD' },
-    { value: 'EUR', label: 'EUR' },
-    { value: 'GBP', label: 'GBP' },
-    { value: 'RUB', label: 'RUB' }
-  ];
-
   // Создаем опции гейтвеев на основе данных шопа
   const gatewayOptions = shopGateways?.map(gatewayId => {
     const gatewayInfo = getGatewayInfo(gatewayId);
@@ -80,14 +220,19 @@ const CreateLinkModal: React.FC<{
     };
   }) || [];
 
+  // Получаем доступные валюты для выбранного гейтвея
+  const availableCurrencies = formData.gateway ? (GATEWAY_CURRENCIES[formData.gateway as keyof typeof GATEWAY_CURRENCIES] || []) : [];
+
   // Устанавливаем первый доступный гейтвей по умолчанию
   useEffect(() => {
     if (shopGateways && shopGateways.length > 0 && !formData.gateway) {
       const firstGateway = shopGateways[0];
+      const defaultCurrency = GATEWAY_CURRENCIES[firstGateway as keyof typeof GATEWAY_CURRENCIES]?.[0]?.value || 'USD';
+      
       setFormData(prev => ({ 
         ...prev, 
         gateway: firstGateway,
-        currency: 'USD', // Всегда фиат для currency
+        currency: defaultCurrency,
         // Для Gateway 0001 (Plisio) устанавливаем sourceCurrency по умолчанию
         ...(firstGateway === '0001' ? { sourceCurrency: 'USDT' } : {})
       }));
@@ -96,19 +241,23 @@ const CreateLinkModal: React.FC<{
 
   // Обновляем настройки при смене гейтвея
   useEffect(() => {
-    if (formData.gateway === '0001') {
-      // Для Gateway 0001 (Plisio) устанавливаем sourceCurrency если его нет
-      if (!formData.sourceCurrency) {
+    if (formData.gateway) {
+      const defaultCurrency = GATEWAY_CURRENCIES[formData.gateway as keyof typeof GATEWAY_CURRENCIES]?.[0]?.value || 'USD';
+      
+      if (formData.gateway === '0001') {
+        // Для Gateway 0001 (Plisio) устанавливаем sourceCurrency если его нет
         setFormData(prev => ({ 
           ...prev, 
-          sourceCurrency: 'USDT'
+          currency: defaultCurrency,
+          sourceCurrency: prev.sourceCurrency || 'USDT'
         }));
-      }
-    } else {
-      // Для других гейтвеев убираем sourceCurrency
-      if (formData.sourceCurrency) {
+      } else {
+        // Для других гейтвеев убираем sourceCurrency и устанавливаем валюту по умолчанию
         const { sourceCurrency, ...rest } = formData;
-        setFormData(rest);
+        setFormData({
+          ...rest,
+          currency: defaultCurrency
+        });
       }
     }
   }, [formData.gateway]);
@@ -221,9 +370,12 @@ const CreateLinkModal: React.FC<{
                     <CustomSelect
                       value={formData.currency}
                       onChange={(value) => setFormData({ ...formData, currency: value })}
-                      options={fiatCurrencyOptions}
+                      options={availableCurrencies}
                       placeholder="Currency"
                     />
+                    {formData.gateway && availableCurrencies.length === 0 && (
+                      <p className="mt-1 text-sm text-red-600">No currencies available for this gateway.</p>
+                    )}
                   </div>
                 </div>
 
@@ -279,8 +431,8 @@ const CreateLinkModal: React.FC<{
                       <div>
                         <h4 className="text-sm font-medium text-blue-900">Gateway 0001 Currency Setup</h4>
                         <div className="mt-2 text-sm text-blue-700 space-y-1">
-                          <p>• <strong>Currency:</strong> Fiat currency for pricing (USD, EUR, GBP, RUB)</p>
-                          <p>• <strong>Source Currency:</strong> Cryptocurrency for actual payment (USDT, BTC, etc.)</p>
+                          <p>• <strong>Currency:</strong> Fiat currency for pricing</p>
+                          <p>• <strong>Source Currency:</strong> Cryptocurrency for actual payment</p>
                           <p>• Customer sees price in fiat but pays with crypto</p>
                         </div>
                       </div>
