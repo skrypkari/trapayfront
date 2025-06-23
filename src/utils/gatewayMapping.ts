@@ -21,7 +21,13 @@ export const GATEWAY_ID_MAP: Record<string, string> = {
   'CoinToPay': '0100',
   'cointopay': '0100', // ✅ Support lowercase from server
   'Noda': '1000',
-  'noda': '1000'       // ✅ Support lowercase from server
+  'noda': '1000',      // ✅ Support lowercase from server
+  'KLYME EU': '1001',
+  'klyme eu': '1001',  // ✅ Support lowercase from server
+  'KLYME GB': '1010',
+  'klyme gb': '1010',  // ✅ Support lowercase from server
+  'KLYME DE': '1100',
+  'klyme de': '1100'   // ✅ Support lowercase from server
 };
 
 // Reverse mapping for internal use
@@ -29,7 +35,10 @@ export const ID_TO_GATEWAY_MAP: Record<string, string> = {
   '0001': 'Plisio',
   '0010': 'Rapyd',
   '0100': 'CoinToPay',
-  '1000': 'Noda'
+  '1000': 'Noda',
+  '1001': 'KLYME EU',
+  '1010': 'KLYME GB',
+  '1100': 'KLYME DE'
 };
 
 // Gateway information for UI display (using IDs)
@@ -37,7 +46,7 @@ export const GATEWAY_INFO: Record<string, GatewayInfo> = {
   '0001': {
     id: '0001',
     name: 'Plisio',
-    displayName: 'Cryptocurrency (Global)',
+    displayName: 'Gateway 0001 - Cryptocurrency (Global)',
     description: 'Modern payment infrastructure - ID: 0001',
     features: ['Crypto'],
     color: 'bg-orange-500',
@@ -47,7 +56,7 @@ export const GATEWAY_INFO: Record<string, GatewayInfo> = {
   '0010': {
     id: '0010',
     name: 'Rapyd',
-    displayName: 'Bank Card (Visa, Master, AmEx, Maestro)',
+    displayName: 'Gateway 0010 - Bank Card (Visa, Master, AmEx, Maestro)',
     description: 'Global payment processing - ID: 0010',
     features: ['Multi-currency'],
     color: 'bg-purple-500',
@@ -57,7 +66,7 @@ export const GATEWAY_INFO: Record<string, GatewayInfo> = {
   '0100': {
     id: '0100',
     name: 'CoinToPay',
-    displayName: 'Open Banking (EU) + SEPA',
+    displayName: 'Gateway 0100 - Open Banking (EU) + SEPA',
     description: 'Digital payment solutions - ID: 0100',
     features: ['EUR', 'SEPA'],
     color: 'bg-green-500',
@@ -67,10 +76,40 @@ export const GATEWAY_INFO: Record<string, GatewayInfo> = {
   '1000': {
     id: '1000',
     name: 'Noda',
-    displayName: 'Open Banking (EU)',
+    displayName: 'Gateway 1000 - Open Banking (EU)',
     description: 'Modern payment infrastructure - ID: 1000',
     features: ['EUR', 'SEPA'],
     color: 'bg-blue-500',
+    fee: '10%',
+    payout: 'T+5'
+  },
+  '1001': {
+    id: '1001',
+    name: 'KLYME EU',
+    displayName: 'Gateway 1001 - Open Banking (EU) KL',
+    description: 'Bank transfer infrastructure - ID: 1001',
+    features: ['EUR', 'SEPA'],
+    color: 'bg-indigo-500',
+    fee: '10%',
+    payout: 'T+5'
+  },
+  '1010': {
+    id: '1010',
+    name: 'KLYME GB',
+    displayName: 'Gateway 1010 - Open Banking (GB) KL',
+    description: 'Bank transfer infrastructure - ID: 1010',
+    features: ['GBP', 'SEPA', 'Faster Payments'],
+    color: 'bg-cyan-500',
+    fee: '10%',
+    payout: 'T+5'
+  },
+  '1100': {
+    id: '1100',
+    name: 'KLYME DE',
+    displayName: 'Gateway 1100 - Open Banking (DE) KL',
+    description: 'Bank transfer infrastructure - ID: 1100',
+    features: ['EUR', 'SEPA'],
+    color: 'bg-teal-500',
     fee: '10%',
     payout: 'T+5'
   }

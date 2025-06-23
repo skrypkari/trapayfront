@@ -25,7 +25,9 @@ import {
   X,
   User,
   Mail,
-  Wallet
+  Wallet,
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -39,12 +41,13 @@ import { formatCurrency, formatCurrencyCompact } from '../utils/currency';
 const PaymentDetailsModal: React.FC<{
   payment: AdminPayment;
   onClose: () => void;
-  onUpdateStatus: (id: string, status: AdminPayment['status'], notes?: string) => void;
+  onUpdateStatus: (id: string, status: AdminPayment['status'], notes?: string, chargebackAmount?: number) => void;
 }> = ({ payment, onClose, onUpdateStatus }) => {
   const [showCopied, setShowCopied] = useState<string | null>(null);
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState<AdminPayment['status']>(payment.status);
   const [notes, setNotes] = useState('');
+  const [chargebackAmount, setChargebackAmount] = useState<string>('');
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -54,16 +57,29 @@ const PaymentDetailsModal: React.FC<{
 
   const handleStatusUpdate = () => {
     if (newStatus !== payment.status) {
-      onUpdateStatus(payment.id, newStatus, notes);
+      // Validate chargeback amount if status is CHARGEBACK
+      if (newStatus === 'CHARGEBACK') {
+        const amount = parseFloat(chargebackAmount);
+        if (!chargebackAmount || isNaN(amount) || amount <= 0) {
+          toast.error('Please enter a valid chargeback amount');
+          return;
+        }
+        onUpdateStatus(payment.id, newStatus, notes, amount);
+      } else {
+        onUpdateStatus(payment.id, newStatus, notes);
+      }
       setIsEditingStatus(false);
     }
   };
 
+  // ✅ UPDATED: Added CHARGEBACK and REFUND status options
   const statusOptions = [
     { value: 'PENDING', label: 'Pending', color: 'text-yellow-600 bg-yellow-50' },
     { value: 'PAID', label: 'Paid', color: 'text-green-600 bg-green-50' },
     { value: 'EXPIRED', label: 'Expired', color: 'text-orange-600 bg-orange-50' },
-    { value: 'FAILED', label: 'Failed', color: 'text-red-600 bg-red-50' }
+    { value: 'FAILED', label: 'Failed', color: 'text-red-600 bg-red-50' },
+    { value: 'CHARGEBACK', label: 'Chargeback', color: 'text-purple-600 bg-purple-50' },
+    { value: 'REFUND', label: 'Refund', color: 'text-blue-600 bg-blue-50' }
   ];
 
   // Определяем способ оплаты по наличию полей
@@ -98,12 +114,12 @@ const PaymentDetailsModal: React.FC<{
       };
     }
 
-    return null; // ✅ FIXED: Return null if no payment method data
+    return null;
   };
 
   const paymentMethodInfo = getPaymentMethodInfo();
 
-  // ✅ FIXED: Check if we have any payment method details to show
+  // Check if we have any payment method details to show
   const hasPaymentMethodDetails = payment.paymentMethod || payment.cardLast4 || payment.bankId || 
                                   payment.remitterIban || payment.remitterName;
 
@@ -180,14 +196,13 @@ const PaymentDetailsModal: React.FC<{
                 </div>
               </div>
 
-              {/* ✅ FIXED: Show Gateway Order ID instead of Order ID */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Gateway Order ID</div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-900 break-all mr-2">{payment.gatewayOrderId || payment.gatewayPaymentId || 'N/A'}</div>
-                  {payment.gatewayOrderId && (
+                  <div className="text-sm text-gray-900 break-all mr-2">{payment.orderId || 'N/A'}</div>
+                  {payment.orderId && (
                     <button
-                      onClick={() => handleCopy(payment.gatewayOrderId!, 'gateway-order-id')}
+                      onClick={() => handleCopy(payment.orderId!, 'gateway-order-id')}
                       className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                     >
                       {showCopied === 'gateway-order-id' ? (
@@ -205,7 +220,6 @@ const PaymentDetailsModal: React.FC<{
                 <div className="text-sm text-gray-900 capitalize">{payment.gateway}</div>
               </div>
 
-              {/* ✅ FIXED: Separate Amount and Currency */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Amount</div>
                 <div className="text-lg font-semibold text-gray-900">
@@ -229,7 +243,7 @@ const PaymentDetailsModal: React.FC<{
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Status</div>
                 {isEditingStatus ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <CustomSelect
                       value={newStatus}
                       onChange={(value) => setNewStatus(value as AdminPayment['status'])}
@@ -239,13 +253,44 @@ const PaymentDetailsModal: React.FC<{
                       }))}
                       placeholder="Select status"
                     />
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Optional notes..."
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-                    />
+                    
+                    {/* ✅ NEW: Chargeback amount input */}
+                    {newStatus === 'CHARGEBACK' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Chargeback Amount (USDT) *
+                        </label>
+                        <input
+                          type="number"
+                          value={chargebackAmount}
+                          onChange={(e) => setChargebackAmount(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                          required
+                        />
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Notes {newStatus === 'CHARGEBACK' || newStatus === 'REFUND' ? '*' : '(Optional)'}
+                      </label>
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                        placeholder={
+                          newStatus === 'CHARGEBACK' ? 'Reason for chargeback...' :
+                          newStatus === 'REFUND' ? 'Reason for refund...' :
+                          'Optional notes...'
+                        }
+                        rows={3}
+                        required={newStatus === 'CHARGEBACK' || newStatus === 'REFUND'}
+                      />
+                    </div>
+                    
                     <div className="flex space-x-2">
                       <button
                         onClick={handleStatusUpdate}
@@ -270,6 +315,8 @@ const PaymentDetailsModal: React.FC<{
                       {payment.status === 'PENDING' && <Clock className="h-4 w-4" />}
                       {payment.status === 'EXPIRED' && <AlertTriangle className="h-4 w-4" />}
                       {payment.status === 'FAILED' && <XCircle className="h-4 w-4" />}
+                      {payment.status === 'CHARGEBACK' && <RotateCcw className="h-4 w-4" />}
+                      {payment.status === 'REFUND' && <AlertCircle className="h-4 w-4" />}
                       <span className="text-sm font-medium">{payment.status}</span>
                     </div>
                     <button
@@ -307,6 +354,24 @@ const PaymentDetailsModal: React.FC<{
                   <div className="text-sm text-gray-900">
                     {format(new Date(payment.expiresAt), 'PPpp')}
                   </div>
+                </div>
+              )}
+
+              {/* ✅ NEW: Show chargeback amount if status is CHARGEBACK */}
+              {payment.status === 'CHARGEBACK' && payment.chargebackAmount && (
+                <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                  <div className="text-sm font-medium text-purple-700 mb-1">Chargeback Amount</div>
+                  <div className="text-lg font-semibold text-purple-900">
+                    ${payment.chargebackAmount.toFixed(2)} USDT
+                  </div>
+                </div>
+              )}
+
+              {/* ✅ NEW: Show notes if available */}
+              {payment.notes && (
+                <div className="p-4 bg-gray-50 rounded-xl md:col-span-2 lg:col-span-3">
+                  <div className="text-sm font-medium text-gray-500 mb-1">Notes</div>
+                  <div className="text-sm text-gray-900">{payment.notes}</div>
                 </div>
               )}
             </div>
@@ -379,7 +444,7 @@ const PaymentDetailsModal: React.FC<{
             </div>
           )}
 
-          {/* ✅ FIXED: Only show Payment Method Details section if we have data */}
+          {/* Only show Payment Method Details section if we have data */}
           {hasPaymentMethodDetails && (
             <div>
               <h4 className="text-lg font-semibold text-gray-900 mb-4">Payment Method Details</h4>
@@ -544,8 +609,8 @@ const AdminPayments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [gatewayFilter, setGatewayFilter] = useState<string>('all');
-  const [currencyFilter, setCurrencyFilter] = useState<string>('all'); // ✅ NEW: Currency filter
-  const [merchantFilter, setMerchantFilter] = useState<string>('all'); // ✅ NEW: Merchant filter
+  const [currencyFilter, setCurrencyFilter] = useState<string>('all');
+  const [merchantFilter, setMerchantFilter] = useState<string>('all');
   const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -589,7 +654,7 @@ const AdminPayments: React.FC = () => {
 
   const { data: paymentsData, isLoading, error } = usePayments(filters);
 
-  // ✅ NEW: Extract unique currencies and merchants from payments data for filter options
+  // Extract unique currencies and merchants from payments data for filter options
   const { currencyOptions, merchantOptions } = useMemo(() => {
     if (!paymentsData?.payments) {
       return { currencyOptions: [], merchantOptions: [] };
@@ -612,7 +677,7 @@ const AdminPayments: React.FC = () => {
     return { currencyOptions: currencyOpts, merchantOptions: merchantOpts };
   }, [paymentsData?.payments]);
 
-  // ✅ NEW: Client-side filtering for currency and merchant (since API doesn't support these filters yet)
+  // Client-side filtering for currency and merchant (since API doesn't support these filters yet)
   const filteredPayments = useMemo(() => {
     if (!paymentsData?.payments) return [];
 
@@ -631,12 +696,15 @@ const AdminPayments: React.FC = () => {
     });
   }, [paymentsData?.payments, currencyFilter, merchantFilter]);
 
+  // ✅ UPDATED: Added CHARGEBACK and REFUND status options
   const statusOptions = [
     { value: 'all', label: 'All Status' },
     { value: 'PENDING', label: 'Pending', icon: <Clock className="h-4 w-4 text-yellow-600" /> },
     { value: 'PAID', label: 'Paid', icon: <CheckCircle2 className="h-4 w-4 text-green-600" /> },
     { value: 'EXPIRED', label: 'Expired', icon: <AlertTriangle className="h-4 w-4 text-orange-600" /> },
-    { value: 'FAILED', label: 'Failed', icon: <XCircle className="h-4 w-4 text-red-600" /> }
+    { value: 'FAILED', label: 'Failed', icon: <XCircle className="h-4 w-4 text-red-600" /> },
+    { value: 'CHARGEBACK', label: 'Chargeback', icon: <RotateCcw className="h-4 w-4 text-purple-600" /> },
+    { value: 'REFUND', label: 'Refund', icon: <AlertCircle className="h-4 w-4 text-blue-600" /> }
   ];
 
   const gatewayOptions = [
@@ -644,7 +712,10 @@ const AdminPayments: React.FC = () => {
     { value: 'plisio', label: 'Plisio' },
     { value: 'rapyd', label: 'Rapyd' },
     { value: 'cointopay', label: 'CoinToPay' },
-    { value: 'noda', label: 'Noda' }
+    { value: 'noda', label: 'Noda' },
+    { value: 'klyme_eu', label: 'KLYME EU' },
+    { value: 'klyme_gb', label: 'KLYME GB' },
+    { value: 'klyme_de', label: 'KLYME DE' }
   ];
 
   const pageSizeOptions = [
@@ -654,11 +725,18 @@ const AdminPayments: React.FC = () => {
     { value: '100', label: '100 per page' }
   ];
 
-  const handleUpdatePaymentStatus = async (id: string, status: AdminPayment['status'], notes?: string) => {
+  const handleUpdatePaymentStatus = async (id: string, status: AdminPayment['status'], notes?: string, chargebackAmount?: number) => {
     try {
+      const updateData: any = { status, notes };
+      
+      // Add chargeback amount if status is CHARGEBACK
+      if (status === 'CHARGEBACK' && chargebackAmount) {
+        updateData.chargebackAmount = chargebackAmount;
+      }
+      
       await updateStatusMutation.mutateAsync({
         id,
-        data: { status, notes }
+        data: updateData
       });
       toast.success(`Payment status updated to ${status}`);
       setSelectedPayment(null);
@@ -748,7 +826,7 @@ const AdminPayments: React.FC = () => {
             </div>
 
             {/* Filters Row 1 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <CustomSelect
                 value={statusFilter}
                 onChange={setStatusFilter}
@@ -763,12 +841,18 @@ const AdminPayments: React.FC = () => {
                 placeholder="Filter by gateway"
                 className="w-full"
               />
-              {/* ✅ NEW: Currency Filter */}
               <CustomSelect
                 value={currencyFilter}
                 onChange={setCurrencyFilter}
                 options={currencyOptions}
                 placeholder="Filter by currency"
+                className="w-full"
+              />
+              <CustomSelect
+                value={merchantFilter}
+                onChange={setMerchantFilter}
+                options={merchantOptions}
+                placeholder="Filter by merchant"
                 className="w-full"
               />
             </div>
@@ -882,7 +966,7 @@ const AdminPayments: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-mono text-gray-900">{payment.gatewayOrderId || 'N/A'}</span>
+                        <span className="text-sm font-mono text-gray-900">{payment.orderId || 'N/A'}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div>
@@ -940,6 +1024,20 @@ const AdminPayments: React.FC = () => {
                             <span className="text-sm font-medium">Failed</span>
                           </div>
                         )}
+                        {/* ✅ NEW: CHARGEBACK status */}
+                        {payment.status === 'CHARGEBACK' && (
+                          <div className="flex items-center space-x-2 text-purple-600 bg-purple-50 px-3 py-1 rounded-lg w-fit">
+                            <RotateCcw className="h-4 w-4" />
+                            <span className="text-sm font-medium">Chargeback</span>
+                          </div>
+                        )}
+                        {/* ✅ NEW: REFUND status */}
+                        {payment.status === 'REFUND' && (
+                          <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-lg w-fit">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">Refund</span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         {payment.customerEmail ? (
@@ -975,7 +1073,6 @@ const AdminPayments: React.FC = () => {
                 Showing {((paymentsData.pagination.page - 1) * paymentsData.pagination.limit) + 1} to{' '}
                 {Math.min(paymentsData.pagination.page * paymentsData.pagination.limit, paymentsData.pagination.total)} of{' '}
                 {paymentsData.pagination.total} results
-                {/* ✅ NEW: Show filtered count if filters are applied */}
                 {(currencyFilter !== 'all' || merchantFilter !== 'all') && (
                   <span className="text-primary"> (filtered: {filteredPayments.length})</span>
                 )}

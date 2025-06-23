@@ -29,7 +29,9 @@ import {
   Building2,
   Bitcoin,
   Check,
-  X
+  X,
+  RotateCcw,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -197,6 +199,20 @@ const PaymentDetailsModal: React.FC<{
                     <span className="text-sm font-medium">Expired</span>
                   </div>
                 )}
+                {/* ✅ NEW: CHARGEBACK status */}
+                {(payment.status as any) === 'CHARGEBACK' && (
+                  <div className="flex items-center space-x-2 text-purple-600 bg-purple-50 px-3 py-1 rounded-lg w-fit">
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="text-sm font-medium">Chargeback</span>
+                  </div>
+                )}
+                {/* ✅ NEW: REFUND status */}
+                {(payment.status as any) === 'REFUND' && (
+                  <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-lg w-fit">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Refund</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -247,6 +263,24 @@ const PaymentDetailsModal: React.FC<{
                 <div className="text-sm text-gray-900">
                   {format(new Date((payment as any).expires_at), 'PPpp')}
                 </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Show chargeback amount if status is CHARGEBACK */}
+            {(payment.status as any) === 'CHARGEBACK' && (payment as any).chargebackAmount && (
+              <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                <div className="text-sm font-medium text-purple-700 mb-1">Chargeback Amount</div>
+                <div className="text-lg font-semibold text-purple-900">
+                  ${(payment as any).chargebackAmount.toFixed(2)} USDT
+                </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Show notes if available */}
+            {(payment as any).notes && (
+              <div className="p-4 bg-gray-50 rounded-xl md:col-span-2 lg:col-span-3">
+                <div className="text-sm font-medium text-gray-500 mb-1">Notes</div>
+                <div className="text-sm text-gray-900">{(payment as any).notes}</div>
               </div>
             )}
           </div>
@@ -360,12 +394,15 @@ const Transactions: React.FC = () => {
   const { data: paymentsData, isLoading, error } = useShopPayments(filters);
   const { data: statistics } = useShopStatistics('30d');
 
+  // ✅ UPDATED: Added CHARGEBACK and REFUND status options
   const statusOptions = [
     { value: 'all', label: 'All Status' },
     { value: 'PAID', label: 'Paid', icon: <CheckCircle2 className="h-4 w-4 text-green-600" /> },
     { value: 'PENDING', label: 'Pending', icon: <Clock className="h-4 w-4 text-yellow-600" /> },
     { value: 'FAILED', label: 'Failed', icon: <AlertCircle className="h-4 w-4 text-red-600" /> },
     { value: 'EXPIRED', label: 'Expired', icon: <XCircle className="h-4 w-4 text-gray-600" /> },
+    { value: 'CHARGEBACK', label: 'Chargeback', icon: <RotateCcw className="h-4 w-4 text-purple-600" /> },
+    { value: 'REFUND', label: 'Refund', icon: <AlertTriangle className="h-4 w-4 text-blue-600" /> },
   ];
 
   const gatewayOptions = [
@@ -374,6 +411,9 @@ const Transactions: React.FC = () => {
     { value: '0010', label: 'Gateway 0010' },
     { value: '0100', label: 'Gateway 0100' },
     { value: '1000', label: 'Gateway 1000' },
+    { value: '1001', label: 'Gateway 1001' },
+    { value: '1010', label: 'Gateway 1010' },
+    { value: '1100', label: 'Gateway 1100' },
   ];
 
   const columns = useMemo(() => {
@@ -407,7 +447,7 @@ const Transactions: React.FC = () => {
       columnHelper.accessor('gateway', {
         header: 'Gateway',
         cell: (info) => {
-          // ✅ FINAL FIX: Convert gateway name to ID for display
+          // Convert gateway name to ID for display
           const gatewayName = info.getValue();
           const gatewayId = convertGatewayNamesToIds([gatewayName])[0];
           console.log('🔍 Gateway conversion in table:', gatewayName, '->', gatewayId); // Debug log
@@ -467,6 +507,20 @@ const Transactions: React.FC = () => {
                 <div className="flex items-center space-x-2 text-gray-600 bg-gray-50 px-3 py-1 rounded-lg">
                   <XCircle className="h-4 w-4 hidden sm:inline" />
                   <span className="text-sm font-medium">Expired</span>
+                </div>
+              )}
+              {/* ✅ NEW: CHARGEBACK status */}
+              {(status as any) === 'CHARGEBACK' && (
+                <div className="flex items-center space-x-2 text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">
+                  <RotateCcw className="h-4 w-4 hidden sm:inline" />
+                  <span className="text-sm font-medium">Chargeback</span>
+                </div>
+              )}
+              {/* ✅ NEW: REFUND status */}
+              {(status as any) === 'REFUND' && (
+                <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                  <AlertTriangle className="h-4 w-4 hidden sm:inline" />
+                  <span className="text-sm font-medium">Refund</span>
                 </div>
               )}
             </div>
@@ -534,7 +588,7 @@ const Transactions: React.FC = () => {
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="bg-white rounded-xl shadow-sm p-3 md:p-6 border border-gray-100 hover:border-primary/20 transition-all duration-200"
@@ -546,7 +600,7 @@ const Transactions: React.FC = () => {
               <div>
                 <p className="text-xs md:text-sm text-gray-500">Total Revenue</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                  {statistics.totalAmount.toLocaleString()} USDT
+                  ${statistics.totalAmount.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -581,6 +635,23 @@ const Transactions: React.FC = () => {
                 <p className="text-xs md:text-sm text-gray-500">Total Payments</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
                   {statistics.totalPayments.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+          
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="bg-white rounded-xl shadow-sm p-3 md:p-6 border border-gray-100 hover:border-primary/20 transition-all duration-200"
+          >
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="p-2 md:p-3 bg-orange-50 rounded-xl flex-shrink-0">
+                <CreditCard className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-xs md:text-sm text-gray-500">Average</p>
+                <p className="text-lg md:text-2xl font-semibold text-gray-900">
+                  ${statistics.averageAmount.toFixed(2)}
                 </p>
               </div>
             </div>

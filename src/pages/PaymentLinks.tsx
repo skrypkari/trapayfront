@@ -181,6 +181,15 @@ const GATEWAY_CURRENCIES = {
   ],
   '0100': [ // CoinToPay - только EUR
     { value: 'EUR', label: 'EUR - Euro' }
+  ],
+  '1001': [ // KLYME EU - только EUR
+    { value: 'EUR', label: 'EUR - Euro' }
+  ],
+  '1010': [ // KLYME GB - только GBP
+    { value: 'GBP', label: 'GBP - British Pound' }
+  ],
+  '1100': [ // KLYME DE - только EUR
+    { value: 'EUR', label: 'EUR - Euro' }
   ]
 };
 
