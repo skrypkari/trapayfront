@@ -30,7 +30,7 @@ export interface ShopProfile {
   };
 }
 
-// Payment Interface
+// Payment Interface - ✅ UPDATED: Added PROCESSING status
 export interface ShopPayment {
   id: string;
   shopId: string;
@@ -38,7 +38,7 @@ export interface ShopPayment {
   productName: string;
   amount: number;
   currency: string;
-  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'PAID' | 'EXPIRED' | 'FAILED';
   createdAt: string;
   updatedAt?: string;
   customerEmail?: string;
@@ -96,6 +96,7 @@ export interface ShopStatistics {
   paymentsByStatus: {
     PAID: number;
     PENDING: number;
+    PROCESSING: number; // ✅ NEW: Added PROCESSING status
     FAILED: number;
     EXPIRED: number;
   };
@@ -127,11 +128,11 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// Filters
+// Filters - ✅ UPDATED: Added PROCESSING status
 export interface PaymentFilters {
   page?: number;
   limit?: number;
-  status?: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED';
+  status?: 'PENDING' | 'PROCESSING' | 'PAID' | 'EXPIRED' | 'FAILED';
   gateway?: string; // Gateway ID
 }
 

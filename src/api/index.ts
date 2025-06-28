@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://amaterasy884.icu/api',
+  baseURL: 'https://api.trapay.uk/api',
   withCredentials: true,
 });
 

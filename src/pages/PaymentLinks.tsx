@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import DatePicker from '../components/DatePicker';
 import CustomSelect from '../components/CustomSelect';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { getGatewayInfo, convertGatewayNamesToIds } from '../utils/gatewayMapping';
+import { getGatewayInfo, getGatewayDisplayName, getGatewayIdSafe } from '../utils/gatewayMapping';
 import { 
   usePaymentLinks, 
   useCreatePaymentLink, 
@@ -195,13 +195,13 @@ const GATEWAY_CURRENCIES = {
 
 // Криптовалюты для sourceCurrency в Gateway 0001 (Plisio)
 const cryptoCurrencyOptions = [
-  { value: 'USDT', label: 'USDT' },
-  { value: 'TON', label: 'TON' },
+  { value: 'USDT_TRX', label: 'USDT TRC-20' },
+  { value: 'USDT', label: 'USDT ERC-20' },
+  { value: 'USDC', label: 'USDC ERC-20' },
   { value: 'BTC', label: 'BTC' },
   { value: 'ETH', label: 'ETH' },
-  { value: 'LTC', label: 'LTC' },
-  { value: 'BCH', label: 'BCH' },
-  { value: 'DOGE', label: 'DOGE' }
+  { value: 'TON', label: 'TON' },
+  { value: 'TRX', label: 'TRON' }
 ];
 
 const CreateLinkModal: React.FC<{
@@ -519,9 +519,8 @@ const LinkPreviewModal: React.FC<{
 }> = ({ link, onClose }) => {
   const [showCopied, setShowCopied] = useState<string | null>(null);
   
-  // Convert gateway name to ID for display
-  const gatewayId = convertGatewayNamesToIds([link.gateway])[0];
-  const gatewayInfo = getGatewayInfo(gatewayId);
+  // ✅ FIXED: Use safe gateway display function
+  const gatewayDisplayName = getGatewayDisplayName(link.gateway);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -612,7 +611,7 @@ const LinkPreviewModal: React.FC<{
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Gateway</div>
                 <div className="text-sm text-gray-900">
-                  {gatewayInfo ? gatewayInfo.displayName : `Gateway ${gatewayId || link.gateway}`}
+                  {gatewayDisplayName}
                 </div>
               </div>
 
@@ -834,9 +833,8 @@ const PaymentLinks: React.FC = () => {
               </thead>
               <tbody>
                 {paymentLinksData?.paymentLinks?.map((link) => {
-                  // Convert gateway name to ID for display
-                  const gatewayId = convertGatewayNamesToIds([link.gateway])[0];
-                  const gatewayInfo = getGatewayInfo(gatewayId);
+                  // ✅ FIXED: Use safe gateway display function
+                  const gatewayDisplayName = getGatewayDisplayName(link.gateway);
                   
                   return (
                     <tr key={link.id} className="border-b border-gray-100 hover:bg-gray-50">
@@ -860,7 +858,7 @@ const PaymentLinks: React.FC = () => {
                       </td>
                       <td className="p-4">
                         <span className="text-sm text-gray-900">
-                          {gatewayInfo ? gatewayInfo.displayName : `Gateway ${gatewayId || link.gateway}`}
+                          {gatewayDisplayName}
                         </span>
                       </td>
                       <td className="p-4">

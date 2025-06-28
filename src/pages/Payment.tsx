@@ -14,7 +14,8 @@ import {
   QrCode,
   Timer,
   CreditCard,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -28,7 +29,7 @@ interface PaymentData {
   amount: number;
   currency: string;
   source_currency?: string;
-  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'PAID' | 'EXPIRED' | 'FAILED';
   payment_url: string;
   success_url?: string;
   fail_url?: string;
@@ -42,6 +43,8 @@ interface PaymentData {
   expires_at?: string;
   order_id?: string;
   merchant_brand?: string;
+  external_payment_url?: string; // для внешних платежей
+  gateway_order_id?: string; // для Plisio
 }
 
 const Payment: React.FC = () => {
@@ -63,7 +66,7 @@ const Payment: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
+        const response = await fetch(`https://api.trapay.uk/api/payments/${id}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -110,11 +113,11 @@ const Payment: React.FC = () => {
 
   // Poll for payment status updates
   useEffect(() => {
-    if (!paymentData || paymentData.status !== 'PENDING') return;
+    if (!paymentData || (paymentData.status !== 'PENDING' && paymentData.status !== 'PROCESSING')) return;
 
     const pollStatus = async () => {
       try {
-        const response = await fetch(`https://amaterasy884.icu/api/payments/${id}`);
+        const response = await fetch(`https://api.trapay.uk/api/payments/${id}`);
         const data = await response.json();
 
         if (data.success && data.result) {
@@ -164,7 +167,18 @@ const Payment: React.FC = () => {
 
   // Get display order ID (order_id or fallback to id)
   const getDisplayOrderId = () => {
-    return paymentData?.order_id || paymentData?.id || '';
+    return paymentData?.order_id || paymentData?.gateway_order_id || paymentData?.id ||'';
+  };
+
+  // Маппинг для source_currency
+  const cryptoCurrencyLabels: Record<string, string> = {
+    USDT_TRX: 'USDT TRC-20',
+    USDT: 'USDT ERC-20',
+    USDC: 'USDC ERC-20',
+    BTC: 'BTC',
+    ETH: 'ETH',
+    TON: 'TON',
+    TRX: 'TRON',
   };
 
   if (isLoading) {
@@ -210,14 +224,29 @@ const Payment: React.FC = () => {
                 </div>
               </div>
               <span>•</span>
-              <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
+              <a href="https://t.me/trapay_sales" className="hover:text-gray-700 transition-colors">Support</a>
             </div>
           </div>
         </div>
       </div>
     );
   }
-
+  if (
+    paymentData?.external_payment_url &&
+    paymentData.external_payment_url.includes('tesoft')
+  ) {
+    return (
+      <div style={{ width: '100vw', height: '100vh', margin: 0, padding: 0 }}>
+        <iframe
+          src={paymentData.external_payment_url}
+          style={{ width: '100vw', height: '100vh', border: 'none' }}
+          title="External Payment"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-2xl mx-auto p-4 md:p-6">
@@ -247,7 +276,9 @@ const Payment: React.FC = () => {
                       {formatCurrency(paymentData.amount, paymentData.currency)}
                     </div>
                     {paymentData.source_currency && (
-                      <div className="text-sm opacity-75">via {paymentData.source_currency}</div>
+                      <div className="text-sm opacity-75">
+                        via {cryptoCurrencyLabels[paymentData.source_currency] || paymentData.source_currency}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -255,6 +286,7 @@ const Payment: React.FC = () => {
 
               {/* Main Content */}
               <div className="p-8">
+                {/* Pending State */}
                 {paymentData.status === 'PENDING' && (
                   <div className="text-center space-y-6">
                     {/* QR Code Section for Plisio */}
@@ -312,7 +344,7 @@ const Payment: React.FC = () => {
                             <div className="flex items-center space-x-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
                               <CreditCard className="h-5 w-5 text-blue-600 flex-shrink-0" />
                               <span className="flex-1 text-lg font-semibold text-blue-900">
-                                {paymentData.invoice_total_sum} {paymentData.source_currency}
+                                {paymentData.invoice_total_sum} {cryptoCurrencyLabels[paymentData.source_currency] || paymentData.source_currency}
                               </span>
                               <button
                                 onClick={() => handleCopy(paymentData.invoice_total_sum!.toString(), 'amount')}
@@ -361,6 +393,61 @@ const Payment: React.FC = () => {
                         </a>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* ✅ UPDATED: Processing State - Payment received, waiting for blockchain confirmation */}
+                {paymentData.status === 'PROCESSING' && (
+                  <div className="text-center space-y-6">
+                    <div className="relative">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", duration: 0.6 }}
+                        className="relative w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto"
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Loader2 className="h-12 w-12 text-white" />
+                        </motion.div>
+                      </motion.div>
+                    </div>
+
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Received!</h2>
+                      <p className="text-gray-600">Your payment has been received and is being confirmed in the blockchain.</p>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="flex-shrink-0">
+                          <CheckCircle2 className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <h4 className="text-lg font-semibold text-green-900 mb-2">Payment Confirmed</h4>
+                          <div className="space-y-2 text-sm text-green-700">
+                            <p>✅ Your payment has been successfully received</p>
+                            <p>🔄 Waiting for blockchain confirmation</p>
+                            <p>⏱️ This usually takes 1-5 minutes</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <div className="flex items-start space-x-3">
+                        <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-left">
+                          <h4 className="text-sm font-medium text-blue-900">What happens next?</h4>
+                          <p className="mt-1 text-sm text-blue-700">
+                            Your transaction is being processed on the blockchain. Once confirmed, 
+                            you'll be automatically redirected to the success page.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -469,7 +556,7 @@ const Payment: React.FC = () => {
                   </div>
                 </div>
                 <span>•</span>
-                <a href="#" className="hover:text-gray-700 transition-colors">Support</a>
+                <a href="https://t.me/trapay_sales" className="hover:text-gray-700 transition-colors">Support</a>
               </div>
             </div>
           </motion.div>

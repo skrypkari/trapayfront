@@ -49,7 +49,7 @@ const PaymentFailed: React.FC = () => {
                     <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                       {paymentId && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">Payment ID:</span>
+                          <span className="text-gray-500">Order ID:</span>
                           <span className="font-mono text-gray-900">{paymentId}</span>
                         </div>
                       )}

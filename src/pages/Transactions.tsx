@@ -31,7 +31,8 @@ import {
   Check,
   X,
   RotateCcw,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -55,7 +56,7 @@ import {
   type ShopPayment,
   type PaymentFilters 
 } from '../hooks/useShop';
-import { getGatewayInfo, convertGatewayNamesToIds } from '../utils/gatewayMapping';
+import { getGatewayInfo, getGatewayDisplayName, getGatewayIdSafe } from '../utils/gatewayMapping';
 
 const PaymentDetailsModal: React.FC<{
   payment: ShopPayment;
@@ -69,9 +70,8 @@ const PaymentDetailsModal: React.FC<{
     setTimeout(() => setShowCopied(null), 2000);
   };
 
-  // Get gateway info for display - convert name to ID first
-  const gatewayId = convertGatewayNamesToIds([payment.gateway])[0];
-  const gatewayInfo = getGatewayInfo(gatewayId);
+  // ✅ FIXED: Use safe gateway display function
+  const gatewayDisplayName = getGatewayDisplayName(payment.gateway);
 
   // Helper function to render field if value exists
   const renderField = (label: string, value: any, copyable = false, copyId?: string) => {
@@ -161,7 +161,7 @@ const PaymentDetailsModal: React.FC<{
             <div className="p-4 bg-gray-50 rounded-xl">
               <div className="text-sm font-medium text-gray-500 mb-1">Gateway</div>
               <div className="text-sm text-gray-900">
-                {gatewayId || payment.gateway}
+                {gatewayDisplayName}
               </div>
             </div>
 
@@ -185,6 +185,12 @@ const PaymentDetailsModal: React.FC<{
                   <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg w-fit">
                     <Clock className="h-4 w-4" />
                     <span className="text-sm font-medium">Pending</span>
+                  </div>
+                )}
+                {payment.status === 'PROCESSING' && (
+                  <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-lg w-fit">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm font-medium">Processing</span>
                   </div>
                 )}
                 {payment.status === 'FAILED' && (
@@ -271,7 +277,7 @@ const PaymentDetailsModal: React.FC<{
               <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
                 <div className="text-sm font-medium text-purple-700 mb-1">Chargeback Amount</div>
                 <div className="text-lg font-semibold text-purple-900">
-                  ${(payment as any).chargebackAmount.toFixed(2)} USDT
+                  {(payment as any).chargebackAmount.toFixed(2)} USDT
                 </div>
               </div>
             )}
@@ -394,11 +400,12 @@ const Transactions: React.FC = () => {
   const { data: paymentsData, isLoading, error } = useShopPayments(filters);
   const { data: statistics } = useShopStatistics('30d');
 
-  // ✅ UPDATED: Added CHARGEBACK and REFUND status options
+  // ✅ UPDATED: Added PROCESSING, CHARGEBACK and REFUND status options
   const statusOptions = [
     { value: 'all', label: 'All Status' },
     { value: 'PAID', label: 'Paid', icon: <CheckCircle2 className="h-4 w-4 text-green-600" /> },
     { value: 'PENDING', label: 'Pending', icon: <Clock className="h-4 w-4 text-yellow-600" /> },
+    { value: 'PROCESSING', label: 'Processing', icon: <Loader2 className="h-4 w-4 text-blue-600" /> },
     { value: 'FAILED', label: 'Failed', icon: <AlertCircle className="h-4 w-4 text-red-600" /> },
     { value: 'EXPIRED', label: 'Expired', icon: <XCircle className="h-4 w-4 text-gray-600" /> },
     { value: 'CHARGEBACK', label: 'Chargeback', icon: <RotateCcw className="h-4 w-4 text-purple-600" /> },
@@ -447,14 +454,13 @@ const Transactions: React.FC = () => {
       columnHelper.accessor('gateway', {
         header: 'Gateway',
         cell: (info) => {
-          // Convert gateway name to ID for display
+          // ✅ FIXED: Use safe gateway display function
           const gatewayName = info.getValue();
-          const gatewayId = convertGatewayNamesToIds([gatewayName])[0];
-          console.log('🔍 Gateway conversion in table:', gatewayName, '->', gatewayId); // Debug log
+          const gatewayDisplayName = getGatewayDisplayName(gatewayName);
           
           return (
             <div className="text-sm font-medium text-gray-900">
-              {gatewayId || gatewayName}
+              {gatewayDisplayName}
             </div>
           );
         },
@@ -495,6 +501,13 @@ const Transactions: React.FC = () => {
                 <div className="flex items-center space-x-2 text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg">
                   <Clock className="h-4 w-4 hidden sm:inline" />
                   <span className="text-sm font-medium">Pending</span>
+                </div>
+              )}
+              {/* ✅ NEW: PROCESSING status */}
+              {status === 'PROCESSING' && (
+                <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                  <Loader2 className="h-4 w-4 hidden sm:inline animate-spin" />
+                  <span className="text-sm font-medium">Processing</span>
                 </div>
               )}
               {status === 'FAILED' && (
@@ -600,7 +613,7 @@ const Transactions: React.FC = () => {
               <div>
                 <p className="text-xs md:text-sm text-gray-500">Total Revenue</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                  ${statistics.totalAmount.toLocaleString()}
+                  {statistics.totalAmount.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -651,7 +664,7 @@ const Transactions: React.FC = () => {
               <div>
                 <p className="text-xs md:text-sm text-gray-500">Average</p>
                 <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                  ${statistics.averageAmount.toFixed(2)}
+                  {statistics.averageAmount.toFixed(2)}
                 </p>
               </div>
             </div>

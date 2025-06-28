@@ -187,9 +187,9 @@ const Login: React.FC = () => {
               <img src="/logo.webp" alt="TRAPAY" className="h-8" />
             </div>
             <div className="flex items-center space-x-4 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors duration-200">Privacy Policy</a>
+              <a href="https://trapay.uk/legal-privacy.php#Privacy-Policy" className="hover:text-white transition-colors duration-200">Privacy Policy</a>
               <span>•</span>
-              <a href="#" className="hover:text-white transition-colors duration-200">Terms of Use</a>
+              <a href="https://trapay.uk/legal-privacy.php#Terms-of-Use" className="hover:text-white transition-colors duration-200">Terms of Use</a>
             </div>
             <p className="text-sm text-gray-400">© 2025 TRAPAY. All Rights Reserved</p>
           </div>

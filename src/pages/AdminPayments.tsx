@@ -199,10 +199,10 @@ const PaymentDetailsModal: React.FC<{
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Gateway Order ID</div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-900 break-all mr-2">{payment.orderId || 'N/A'}</div>
-                  {payment.orderId && (
+                  <div className="text-sm text-gray-900 break-all mr-2">{payment.gatewayOrderId || 'N/A'}</div>
+                  {payment.gatewayOrderId && (
                     <button
-                      onClick={() => handleCopy(payment.orderId!, 'gateway-order-id')}
+                      onClick={() => handleCopy(payment.gatewayOrderId!, 'gateway-order-id')}
                       className="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                     >
                       {showCopied === 'gateway-order-id' ? (

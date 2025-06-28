@@ -93,7 +93,7 @@ const PaymentSuccess: React.FC = () => {
                     >
                       {paymentId && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Payment ID:</span>
+                          <span className="text-gray-600">Order ID:</span>
                           <span className="font-mono text-gray-900 bg-white px-2 py-1 rounded text-xs">
                             {paymentId}
                           </span>

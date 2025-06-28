@@ -139,7 +139,7 @@ const PayoutDetailsModal: React.FC<{
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-sm font-medium text-gray-500 mb-1">Amount</div>
                 <div className="text-2xl font-semibold text-gray-900">
-                  ${payout.amount.toLocaleString('en-US', {
+                  {payout.amount.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })} USDT
@@ -303,7 +303,7 @@ const Payouts: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-500">Available Balance</p>
                   <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                    ${stats.availableBalance.toLocaleString()} USDT
+                    {stats.availableBalance.toLocaleString()} USDT
                   </p>
                 </div>
               </div>
@@ -320,7 +320,7 @@ const Payouts: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-500">Total Paid Out</p>
                   <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                    ${stats.totalPaidOut.toLocaleString()} USDT
+                    {stats.totalPaidOut.toLocaleString()} USDT
                   </p>
                 </div>
               </div>
@@ -337,7 +337,7 @@ const Payouts: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-500">Awaiting Payout</p>
                   <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                    ${stats.awaitingPayout.toLocaleString()} USDT
+                    {stats.awaitingPayout.toLocaleString()} USDT
                   </p>
                 </div>
               </div>
@@ -354,7 +354,7 @@ const Payouts: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-500">This Month</p>
                   <p className="text-lg md:text-2xl font-semibold text-gray-900">
-                    ${stats.thisMonth.toLocaleString()} USDT
+                    {stats.thisMonth.toLocaleString()} USDT
                   </p>
                 </div>
               </div>
@@ -496,7 +496,7 @@ const Payouts: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-medium text-gray-900">
-                        ${payout.amount.toFixed(2)} USDT
+                        {payout.amount.toFixed(2)} USDT
                       </span>
                     </td>
                     <td className="px-6 py-4">

@@ -29,7 +29,7 @@ export interface AdminStatsResponse {
   result: AdminDashboardStats;
 }
 
-// Admin Payment Types - ✅ UPDATED: Added CHARGEBACK and REFUND statuses
+// Admin Payment Types - ✅ UPDATED: Added PROCESSING, CHARGEBACK and REFUND statuses
 export interface AdminPayment {
   id: string;
   shopId: string;
@@ -40,7 +40,7 @@ export interface AdminPayment {
   amount: number;
   currency: string;
   sourceCurrency?: string;
-  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED' | 'CHARGEBACK' | 'REFUND';
+  status: 'PENDING' | 'PROCESSING' | 'PAID' | 'EXPIRED' | 'FAILED' | 'CHARGEBACK' | 'REFUND';
   usage: 'ONCE' | 'REUSABLE';
   externalPaymentUrl?: string;
   gatewayPaymentId?: string;
@@ -55,6 +55,7 @@ export interface AdminPayment {
   updatedAt: string;
   expiresAt?: string;
   webhookLogs?: WebhookLog[];
+  gatewayOrderId?: string;
   // ✅ NEW: Chargeback specific fields
   chargebackAmount?: number;
   notes?: string;
@@ -71,7 +72,7 @@ export interface WebhookLog {
 export interface AdminPaymentFilters {
   page?: number;
   limit?: number;
-  status?: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED' | 'CHARGEBACK' | 'REFUND';
+  status?: 'PENDING' | 'PROCESSING' | 'PAID' | 'EXPIRED' | 'FAILED' | 'CHARGEBACK' | 'REFUND';
   gateway?: string;
   shopId?: string;
   dateFrom?: string;
@@ -97,7 +98,7 @@ export interface AdminPaymentResponse {
 
 // ✅ UPDATED: Added chargeback and refund specific fields
 export interface UpdatePaymentStatusData {
-  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED' | 'CHARGEBACK' | 'REFUND';
+  status: 'PENDING' | 'PROCESSING' | 'PAID' | 'EXPIRED' | 'FAILED' | 'CHARGEBACK' | 'REFUND';
   notes?: string;
   chargebackAmount?: number; // Required for CHARGEBACK status
 }
